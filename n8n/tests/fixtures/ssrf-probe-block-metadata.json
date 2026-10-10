@@ -1,0 +1,26 @@
+{
+  "id": "ssrfProbeBlock03",
+  "name": "SSRF probe - link-local metadata address NOT allowed",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6f0a1b52-0000-4000-a000-000000000031",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "method": "GET", "url": "http://169.254.169.254/latest/meta-data/", "options": { "timeout": 5000 } },
+      "id": "6f0a1b52-0000-4000-a000-000000000032",
+      "name": "HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [220, 0]
+    }
+  ],
+  "connections": { "Manual Trigger": { "main": [[{ "node": "HTTP", "type": "main", "index": 0 }]] } },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

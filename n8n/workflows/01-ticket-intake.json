@@ -1,0 +1,473 @@
+{
+  "id": "wfTicketIntake01",
+  "name": "01 - Ticket intake",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tickets",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "36993209-0872-4a88-ac5a-3c149d593ede",
+      "name": "Webhook - ticket intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "a96c8585-d4fc-46d9-aa44-5d371812ecb5",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credIntakeWebhk01",
+          "name": "Intake Webhook Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF1 - \"Validate payload\"\n// Validacion en el BORDE: solo presencia y tipo. Las reglas de negocio (longitudes, formato de email,\n// valores permitidos) las aplica Django, que es la fuente de verdad.\n// El formato de `details` es el mismo que devuelve Django ({campo: [mensajes]}).\nconst REQUIRED = ['external_id', 'customer_email', 'subject', 'message'];\n\nconst body = $input.first().json.body;\nconst details = {};\nconst add = (field, message) => {\n  (details[field] = details[field] || []).push(message);\n};\n\nif (body === null || typeof body !== 'object' || Array.isArray(body)) {\n  add('non_field_errors', 'Request body must be a JSON object.');\n} else {\n  for (const field of REQUIRED) {\n    if (body[field] === undefined || body[field] === null) add(field, 'This field is required.');\n    else if (typeof body[field] !== 'string') add(field, 'Not a valid string.');\n  }\n  if (body.source !== undefined && body.source !== null && typeof body.source !== 'string') {\n    add('source', 'Not a valid string.');\n  }\n}\n\nif (Object.keys(details).length > 0) {\n  return [{\n    json: {\n      ok: false,\n      respond: {\n        statusCode: 400,\n        body: { status: 'error', code: 'validation_error', message: 'Invalid request data.', details },\n      },\n    },\n  }];\n}\n\n// Lista blanca: solo se reenvian los campos conocidos; cualquier otro se descarta.\nconst ticket = {};\nfor (const field of REQUIRED) ticket[field] = body[field];\nif (typeof body.source === 'string') ticket.source = body.source;\n\nreturn [{ json: { ok: true, ticket } }];\n"
+      },
+      "id": "1a3b5f50-68ed-4685-a1d2-2d56d536df58",
+      "name": "Validate payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e15bba09-8746-4a34-a020-34cd69972409",
+              "leftValue": "={{ $json.ok === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "01f02f1a-5274-4a92-a84e-b568ad88a68a",
+      "name": "Payload valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/api/tickets/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 8000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.ticket) }}"
+      },
+      "id": "e8684a09-229b-4d17-a51b-fbbc7495d0e6",
+      "name": "Create ticket in Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        720,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credDjangoApiKey1",
+          "name": "Django API Key"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF1 - \"Interpret Django response\"\n// Convierte la respuesta HTTP de Django en: (a) la respuesta para el cliente, (b) si hay que lanzar WF2\n// y (c) el fallo a registrar, si lo hay. El nodo HTTP anterior usa \"fullResponse\" + \"neverError\",\n// asi que recibimos { statusCode, headers, body } tambien con 4xx/5xx.\n// ---- Utilidades compartidas (el builder las inlinea en cada nodo Code que hace `// @include shared.js`) ----\n// Fuente unica: n8n/src/snippets/shared.js. No editar la copia dentro del JSON del workflow.\n\n// external_id llega del cliente SIN validar: solo se propaga si tiene el formato permitido.\nconst safeExternalId = (value) => (typeof value === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(value) ? value : '');\n\n// Texto corto y en una linea, apto para registrar. Nunca se vuelca un payload completo.\nconst shortDetail = (value) =>\n  String(value === undefined || value === null ? '' : value).replace(/\\s+/g, ' ').trim().slice(0, 200);\n\n// El error de un nodo HTTP puede llegar como texto o como objeto.\nconst errorText = (err) => {\n  if (err === undefined || err === null) return '';\n  if (typeof err === 'string') return err;\n  return [err.message, err.description, err.code, err.httpCode ? `HTTP ${err.httpCode}` : '']\n    .filter(Boolean)\n    .join(' | ');\n};\n\n// Mensaje del nodo \"Stop and Error\" que lee WF3. n8n SUSTITUYE el mensaje de un error si contiene (sin\n// distinguir mayusculas) codigos como ECONNREFUSED, EAI_AGAIN o ENOENT. Un external_id elegido por el cliente\n// o el texto de un error de red pueden contenerlos, asi que la carga va en HEXADECIMAL: ninguno de esos\n// codigos puede aparecer en un texto 0-9a-f (todos incluyen alguna letra fuera de a-f).\n// `type` y `retryable` son vocabulario controlado y se dejan en claro para leerlos en la interfaz.\nconst encodeFailure = (failure) => {\n  const ascii = JSON.stringify(failure).replace(/[^\\x00-\\x7f]/g, (c) => `\\\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);\n  const hex = ascii.split('').map((ch) => ch.charCodeAt(0).toString(16).padStart(2, '0')).join('');\n  return `HANDLED_FAILURE type=${failure.type} retryable=${failure.retryable} data=${hex}`;\n};\n\n// Inversa de encodeFailure (la usa WF3). Devuelve null si el mensaje no es un fallo gestionado.\nconst decodeFailure = (message) => {\n  const m = /data=([0-9a-f]+)/.exec(String(message || ''));\n  if (!m || m[1].length % 2 !== 0) return null;\n  try {\n    return JSON.parse(m[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join(''));\n  } catch (e) {\n    return null;\n  }\n};\n\n// Anade `failure_message` (lo que lanzara \"Stop and Error\") a un item que lleve un `failure`.\nconst withFailureMessage = (json) => (json.failure ? { ...json, failure_message: encodeFailure(json.failure) } : json);\n\n// Traduce un fallo de red/HTTP a: tipo de error (para el registro), respuesta al cliente y si es reintentable.\n//   retryable: 'yes' = repetir es seguro (operacion idempotente) | 'no' = hay que corregir algo | 'manual' = decide una persona\n// Algunos errores HTTP de n8n llegan como TEXTO que empieza por el codigo (p. ej. `404 - \"{...cuerpo...}\"`), sin httpCode.\nconst leadingStatus = (text) => {\n  const m = /^\\s*(\\d{3})\\b/.exec(text);\n  return m ? Number(m[1]) : NaN;\n};\n\nconst classifyError = (err) => {\n  const text = errorText(err).toLowerCase();\n  const http = Number(err && typeof err === 'object' ? err.httpCode || err.statusCode : NaN) || leadingStatus(text);\n  // Se reconocen tanto los codigos crudos (ECONNABORTED...) como los textos \"amigables\" con que n8n los reescribe\n  // (STATUS_CODE_MESSAGES y COMMON_ERRORS en n8n-workflow).\n  if (/timeout|timed out|etimedout|econnaborted|connection was aborted|gateway timed out/.test(text)) {\n    return { type: 'timeout', status: 504, code: 'upstream_timeout', retryable: 'yes' };\n  }\n  if (/econnrefused|enotfound|eai_again|ehostunreach|econnreset|socket hang up|getaddrinfo|network|perhaps the server is offline|perhaps it is offline|refused the connection|dns server|connection cannot be established|closed unexpectedly/.test(text)) {\n    return { type: 'connection', status: 503, code: 'upstream_unavailable', retryable: 'yes' };\n  }\n  if (http >= 500 || /not able to process your request|failed to process your request|bad gateway|service unavailable/.test(text)) {\n    return { type: 'http_5xx', status: 502, code: 'upstream_error', retryable: 'yes' };\n  }\n  if (http >= 400 || /authorization failed|check your credentials|forbidden|bad request|could not be found|method not allowed|payment required|request is invalid/.test(text)) {\n    return { type: 'http_4xx', status: 502, code: 'upstream_rejected', retryable: 'no' };\n  }\n  return { type: 'unknown', status: 502, code: 'upstream_error', retryable: 'manual' };\n};\n\n// Un duplicado que sigue sin procesar pasado este tiempo se considera ATASCADO (p. ej. el cliente se\n// rindio por un timeout pero Django termino) y se reprocesa. Debe ser mayor que la duracion maxima de\n// WF2 para que dos ejecuciones nunca coincidan.\nconst STALLED_AFTER_MS = 120000;\n\nconst res = $input.first().json;\nconst sent = $('Validate payload').first().json.ticket;\nconst status = Number(res.statusCode);\nconst body = res.body !== null && typeof res.body === 'object' ? res.body : {};\nconst externalId = safeExternalId(sent.external_id);\n\nconst reply = (statusCode, payload, extra = {}) => [{\n  json: withFailureMessage({ respond: { statusCode, body: payload }, trigger: false, failure: null, ...extra }),\n}];\nconst failed = (statusCode, code, message, failure) => reply(\n  statusCode,\n  { status: 'error', code, message },\n  { failure: { node: 'Create ticket in Django', ticket_external_id: externalId, ...failure } },\n);\n\n// Alta correcta (201) o ticket ya existente (200). Se comprueba la forma de la respuesta: no se asume.\nif ((status === 201 || status === 200) && Number.isInteger(body.id)) {\n  const info = { ticket_id: body.id, external_id: externalId };\n  if (status === 201) {\n    return reply(201, { status: 'accepted', ...info }, { trigger: true, ticket_id: body.id });\n  }\n  const ageMs = Date.now() - Date.parse(body.created_at);\n  const stalled = body.status !== 'notified' && Number.isFinite(ageMs) && ageMs > STALLED_AFTER_MS;\n  return reply(200, { status: 'duplicate', ...info, reprocessing: stalled }, { trigger: stalled, ticket_id: body.id });\n}\n\n// Datos invalidos segun Django: es un error del CLIENTE, no un fallo del workflow (no se registra).\nif (status === 400) {\n  return reply(400, {\n    status: 'error',\n    code: 'validation_error',\n    message: 'Invalid request data.',\n    details: body.details !== undefined ? body.details : {},\n  });\n}\n\n// El resto son fallos del servicio o de configuracion: se responde 502 y se registra.\nif (status >= 400 && status < 500) {\n  return failed(502, 'upstream_rejected',\n    'The ticket service rejected the request. This is a configuration problem, not a problem with your data.',\n    { type: 'http_4xx', retryable: 'no', detail: `HTTP ${status}` });\n}\nif (status >= 500) {\n  return failed(502, 'upstream_error', 'The ticket service failed to process the request.',\n    { type: 'http_5xx', retryable: 'yes', detail: `HTTP ${status}` });\n}\nreturn failed(502, 'upstream_error', 'The ticket service returned an unexpected response.',\n  { type: 'unknown', retryable: 'manual', detail: `HTTP ${status}, unexpected body` });\n"
+      },
+      "id": "5118f697-6373-4895-a589-48abd6a172c8",
+      "name": "Interpret Django response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF1 - \"Interpret connection error\"\n// Salida de error del nodo \"Create ticket in Django\": no hubo respuesta HTTP (API caida, DNS, timeout...).\n// ---- Utilidades compartidas (el builder las inlinea en cada nodo Code que hace `// @include shared.js`) ----\n// Fuente unica: n8n/src/snippets/shared.js. No editar la copia dentro del JSON del workflow.\n\n// external_id llega del cliente SIN validar: solo se propaga si tiene el formato permitido.\nconst safeExternalId = (value) => (typeof value === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(value) ? value : '');\n\n// Texto corto y en una linea, apto para registrar. Nunca se vuelca un payload completo.\nconst shortDetail = (value) =>\n  String(value === undefined || value === null ? '' : value).replace(/\\s+/g, ' ').trim().slice(0, 200);\n\n// El error de un nodo HTTP puede llegar como texto o como objeto.\nconst errorText = (err) => {\n  if (err === undefined || err === null) return '';\n  if (typeof err === 'string') return err;\n  return [err.message, err.description, err.code, err.httpCode ? `HTTP ${err.httpCode}` : '']\n    .filter(Boolean)\n    .join(' | ');\n};\n\n// Mensaje del nodo \"Stop and Error\" que lee WF3. n8n SUSTITUYE el mensaje de un error si contiene (sin\n// distinguir mayusculas) codigos como ECONNREFUSED, EAI_AGAIN o ENOENT. Un external_id elegido por el cliente\n// o el texto de un error de red pueden contenerlos, asi que la carga va en HEXADECIMAL: ninguno de esos\n// codigos puede aparecer en un texto 0-9a-f (todos incluyen alguna letra fuera de a-f).\n// `type` y `retryable` son vocabulario controlado y se dejan en claro para leerlos en la interfaz.\nconst encodeFailure = (failure) => {\n  const ascii = JSON.stringify(failure).replace(/[^\\x00-\\x7f]/g, (c) => `\\\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);\n  const hex = ascii.split('').map((ch) => ch.charCodeAt(0).toString(16).padStart(2, '0')).join('');\n  return `HANDLED_FAILURE type=${failure.type} retryable=${failure.retryable} data=${hex}`;\n};\n\n// Inversa de encodeFailure (la usa WF3). Devuelve null si el mensaje no es un fallo gestionado.\nconst decodeFailure = (message) => {\n  const m = /data=([0-9a-f]+)/.exec(String(message || ''));\n  if (!m || m[1].length % 2 !== 0) return null;\n  try {\n    return JSON.parse(m[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join(''));\n  } catch (e) {\n    return null;\n  }\n};\n\n// Anade `failure_message` (lo que lanzara \"Stop and Error\") a un item que lleve un `failure`.\nconst withFailureMessage = (json) => (json.failure ? { ...json, failure_message: encodeFailure(json.failure) } : json);\n\n// Traduce un fallo de red/HTTP a: tipo de error (para el registro), respuesta al cliente y si es reintentable.\n//   retryable: 'yes' = repetir es seguro (operacion idempotente) | 'no' = hay que corregir algo | 'manual' = decide una persona\n// Algunos errores HTTP de n8n llegan como TEXTO que empieza por el codigo (p. ej. `404 - \"{...cuerpo...}\"`), sin httpCode.\nconst leadingStatus = (text) => {\n  const m = /^\\s*(\\d{3})\\b/.exec(text);\n  return m ? Number(m[1]) : NaN;\n};\n\nconst classifyError = (err) => {\n  const text = errorText(err).toLowerCase();\n  const http = Number(err && typeof err === 'object' ? err.httpCode || err.statusCode : NaN) || leadingStatus(text);\n  // Se reconocen tanto los codigos crudos (ECONNABORTED...) como los textos \"amigables\" con que n8n los reescribe\n  // (STATUS_CODE_MESSAGES y COMMON_ERRORS en n8n-workflow).\n  if (/timeout|timed out|etimedout|econnaborted|connection was aborted|gateway timed out/.test(text)) {\n    return { type: 'timeout', status: 504, code: 'upstream_timeout', retryable: 'yes' };\n  }\n  if (/econnrefused|enotfound|eai_again|ehostunreach|econnreset|socket hang up|getaddrinfo|network|perhaps the server is offline|perhaps it is offline|refused the connection|dns server|connection cannot be established|closed unexpectedly/.test(text)) {\n    return { type: 'connection', status: 503, code: 'upstream_unavailable', retryable: 'yes' };\n  }\n  if (http >= 500 || /not able to process your request|failed to process your request|bad gateway|service unavailable/.test(text)) {\n    return { type: 'http_5xx', status: 502, code: 'upstream_error', retryable: 'yes' };\n  }\n  if (http >= 400 || /authorization failed|check your credentials|forbidden|bad request|could not be found|method not allowed|payment required|request is invalid/.test(text)) {\n    return { type: 'http_4xx', status: 502, code: 'upstream_rejected', retryable: 'no' };\n  }\n  return { type: 'unknown', status: 502, code: 'upstream_error', retryable: 'manual' };\n};\n\nconst sent = $('Validate payload').first().json.ticket;\nconst err = $input.first().json.error;\nconst c = classifyError(err);\n\nconst message = c.type === 'timeout'\n  ? 'The ticket service did not respond in time. Retry the same request: it is safe to repeat.'\n  : c.type === 'connection'\n    ? 'The ticket service is unavailable. Retry the same request later: it is safe to repeat.'\n    : 'The ticket service request failed.';\n\nreturn [{\n  json: withFailureMessage({\n    respond: { statusCode: c.status, body: { status: 'error', code: c.code, message } },\n    trigger: false,\n    failure: {\n      node: 'Create ticket in Django',\n      type: c.type,\n      retryable: c.retryable,\n      ticket_external_id: safeExternalId(sent.external_id),\n      detail: shortDetail(errorText(err)),\n    },\n  }),\n}];\n"
+      },
+      "id": "721c2960-cefb-4cd6-ae7f-5698bb0a7778",
+      "name": "Interpret connection error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6c165372-d4a8-44bf-a023-6d97aa091faf",
+              "leftValue": "={{ $json.trigger === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7a68584c-24cb-48eb-a50e-44ebe1187063",
+      "name": "Start triage?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/internal/ticket-triage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ticket_id: $json.ticket_id }) }}"
+      },
+      "id": "683c40d0-4459-483b-a460-41cb92d9f74c",
+      "name": "Start triage (WF2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1440,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credInternalWebh1",
+          "name": "Internal Webhook Token"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF1 - \"Triage accepted\"\n// WF2 acepto el trabajo: se devuelve al cliente la respuesta ya preparada (\"Interpret Django response\").\nconst prev = $('Interpret Django response').first().json;\nreturn [{ json: { respond: prev.respond, failure: null } }];\n"
+      },
+      "id": "2bbf9bb4-a358-4fa2-ac22-89a61d2e945e",
+      "name": "Triage accepted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF1 - \"Triage not started\"\n// Salida de error del nodo \"Start triage (WF2)\": el ticket YA esta guardado, pero no se pudo lanzar su\n// procesamiento. No se oculta: se responde 502 y se registra el fallo. Reenviar la misma solicitud lo\n// reprocesa pasado el periodo de gracia, y nunca duplica el ticket.\n// ---- Utilidades compartidas (el builder las inlinea en cada nodo Code que hace `// @include shared.js`) ----\n// Fuente unica: n8n/src/snippets/shared.js. No editar la copia dentro del JSON del workflow.\n\n// external_id llega del cliente SIN validar: solo se propaga si tiene el formato permitido.\nconst safeExternalId = (value) => (typeof value === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(value) ? value : '');\n\n// Texto corto y en una linea, apto para registrar. Nunca se vuelca un payload completo.\nconst shortDetail = (value) =>\n  String(value === undefined || value === null ? '' : value).replace(/\\s+/g, ' ').trim().slice(0, 200);\n\n// El error de un nodo HTTP puede llegar como texto o como objeto.\nconst errorText = (err) => {\n  if (err === undefined || err === null) return '';\n  if (typeof err === 'string') return err;\n  return [err.message, err.description, err.code, err.httpCode ? `HTTP ${err.httpCode}` : '']\n    .filter(Boolean)\n    .join(' | ');\n};\n\n// Mensaje del nodo \"Stop and Error\" que lee WF3. n8n SUSTITUYE el mensaje de un error si contiene (sin\n// distinguir mayusculas) codigos como ECONNREFUSED, EAI_AGAIN o ENOENT. Un external_id elegido por el cliente\n// o el texto de un error de red pueden contenerlos, asi que la carga va en HEXADECIMAL: ninguno de esos\n// codigos puede aparecer en un texto 0-9a-f (todos incluyen alguna letra fuera de a-f).\n// `type` y `retryable` son vocabulario controlado y se dejan en claro para leerlos en la interfaz.\nconst encodeFailure = (failure) => {\n  const ascii = JSON.stringify(failure).replace(/[^\\x00-\\x7f]/g, (c) => `\\\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);\n  const hex = ascii.split('').map((ch) => ch.charCodeAt(0).toString(16).padStart(2, '0')).join('');\n  return `HANDLED_FAILURE type=${failure.type} retryable=${failure.retryable} data=${hex}`;\n};\n\n// Inversa de encodeFailure (la usa WF3). Devuelve null si el mensaje no es un fallo gestionado.\nconst decodeFailure = (message) => {\n  const m = /data=([0-9a-f]+)/.exec(String(message || ''));\n  if (!m || m[1].length % 2 !== 0) return null;\n  try {\n    return JSON.parse(m[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join(''));\n  } catch (e) {\n    return null;\n  }\n};\n\n// Anade `failure_message` (lo que lanzara \"Stop and Error\") a un item que lleve un `failure`.\nconst withFailureMessage = (json) => (json.failure ? { ...json, failure_message: encodeFailure(json.failure) } : json);\n\n// Traduce un fallo de red/HTTP a: tipo de error (para el registro), respuesta al cliente y si es reintentable.\n//   retryable: 'yes' = repetir es seguro (operacion idempotente) | 'no' = hay que corregir algo | 'manual' = decide una persona\n// Algunos errores HTTP de n8n llegan como TEXTO que empieza por el codigo (p. ej. `404 - \"{...cuerpo...}\"`), sin httpCode.\nconst leadingStatus = (text) => {\n  const m = /^\\s*(\\d{3})\\b/.exec(text);\n  return m ? Number(m[1]) : NaN;\n};\n\nconst classifyError = (err) => {\n  const text = errorText(err).toLowerCase();\n  const http = Number(err && typeof err === 'object' ? err.httpCode || err.statusCode : NaN) || leadingStatus(text);\n  // Se reconocen tanto los codigos crudos (ECONNABORTED...) como los textos \"amigables\" con que n8n los reescribe\n  // (STATUS_CODE_MESSAGES y COMMON_ERRORS en n8n-workflow).\n  if (/timeout|timed out|etimedout|econnaborted|connection was aborted|gateway timed out/.test(text)) {\n    return { type: 'timeout', status: 504, code: 'upstream_timeout', retryable: 'yes' };\n  }\n  if (/econnrefused|enotfound|eai_again|ehostunreach|econnreset|socket hang up|getaddrinfo|network|perhaps the server is offline|perhaps it is offline|refused the connection|dns server|connection cannot be established|closed unexpectedly/.test(text)) {\n    return { type: 'connection', status: 503, code: 'upstream_unavailable', retryable: 'yes' };\n  }\n  if (http >= 500 || /not able to process your request|failed to process your request|bad gateway|service unavailable/.test(text)) {\n    return { type: 'http_5xx', status: 502, code: 'upstream_error', retryable: 'yes' };\n  }\n  if (http >= 400 || /authorization failed|check your credentials|forbidden|bad request|could not be found|method not allowed|payment required|request is invalid/.test(text)) {\n    return { type: 'http_4xx', status: 502, code: 'upstream_rejected', retryable: 'no' };\n  }\n  return { type: 'unknown', status: 502, code: 'upstream_error', retryable: 'manual' };\n};\n\nconst prev = $('Interpret Django response').first().json;\nconst err = $input.first().json.error;\nconst c = classifyError(err);\nconst info = prev.respond && prev.respond.body ? prev.respond.body : {};\n\nreturn [{\n  json: withFailureMessage({\n    respond: {\n      statusCode: 502,\n      body: {\n        status: 'error',\n        code: 'triage_not_started',\n        message: 'The ticket was stored but its processing could not be started. Resend the same request later to reprocess it.',\n        ticket_id: prev.ticket_id,\n        external_id: safeExternalId(info.external_id),\n      },\n    },\n    failure: {\n      node: 'Start triage (WF2)',\n      type: c.type,\n      retryable: 'yes',\n      ticket_id: prev.ticket_id,\n      ticket_external_id: safeExternalId(info.external_id),\n      detail: shortDetail(errorText(err)),\n    },\n  }),\n}];\n"
+      },
+      "id": "05484d55-2e5d-471e-a72c-2ac724abb2ab",
+      "name": "Triage not started",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.respond.body) }}",
+        "options": {
+          "responseCode": "={{ $json.respond.statusCode }}"
+        }
+      },
+      "id": "57e59424-f283-4241-a20d-b5b05d403c17",
+      "name": "Respond to client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bfed2d94-65e2-4f8a-a919-8c731c757ab4",
+              "leftValue": "={{ $json.failure !== null && $json.failure !== undefined }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "37fac7e6-c01d-49eb-a332-5aafeeb94553",
+      "name": "Failure to report?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "errorType": "errorMessage",
+        "errorMessage": "={{ $json.failure_message }}"
+      },
+      "id": "903acdb7-9eb1-48f7-a57f-e842053a04ee",
+      "name": "Report failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - ticket intake": {
+      "main": [
+        [
+          {
+            "node": "Validate payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate payload": {
+      "main": [
+        [
+          {
+            "node": "Payload valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload valid?": {
+      "main": [
+        [
+          {
+            "node": "Create ticket in Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ticket in Django": {
+      "main": [
+        [
+          {
+            "node": "Interpret Django response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Interpret connection error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpret Django response": {
+      "main": [
+        [
+          {
+            "node": "Start triage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpret connection error": {
+      "main": [
+        [
+          {
+            "node": "Start triage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start triage?": {
+      "main": [
+        [
+          {
+            "node": "Start triage (WF2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start triage (WF2)": {
+      "main": [
+        [
+          {
+            "node": "Triage accepted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Triage not started",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage accepted": {
+      "main": [
+        [
+          {
+            "node": "Respond to client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage not started": {
+      "main": [
+        [
+          {
+            "node": "Respond to client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to client": {
+      "main": [
+        [
+          {
+            "node": "Failure to report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failure to report?": {
+      "main": [
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 45,
+    "errorWorkflow": "wfErrorMonitor03"
+  },
+  "pinData": {}
+}

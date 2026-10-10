@@ -1,0 +1,39 @@
+Captura: 2026-10-09 17:54:17 -0500
+
+=== Django: manage.py test (84 tests; incluye idempotencia y carrera de ErrorEvent)
+Found 84 test(s).
+Ran 84 tests in 0.540s
+OK
+
+=== Migraciones
+tickets
+ [X] 0001_initial
+ [X] 0002_errorevent_ticket_id_unique_execution
+
+=== n8n: scripts/test-workflows.ps1 (JSON al dia + tests unitarios de los nodos Code)
+ok: 01-ticket-intake.json
+ok: 02-ai-triage-notify.json
+ok: 03-error-monitoring.json
+ℹ tests 106
+ℹ pass 106
+ℹ fail 0
+RESULTADO: OK
+
+=== Mutation testing de WF3 y de los nodos de fallo por etapa (codigo roto en una copia; suite ejecutada)
+- el mensaje del evento NO se redacta (PII)                  -> 2 tests fallan
+- la etapa es el nodo Stop and Error en vez de la real       -> 1 test falla
+- un error de validacion se marca reintentable               -> 1 test falla
+- el correo se marca reintentable automaticamente            -> 1 test falla
+- la alerta puede ir a cualquier destinatario del evento     -> 1 test falla
+- external_id sin sanear en el evento                        -> 1 test falla
+- la etapa SMTP deja de forzar reintento manual              -> 1 test falla
+Mutation testing de la idempotencia de ErrorEvent (Django):
+- sin comprobacion previa de idempotencia                    -> 1 test falla
+- sin manejo de la carrera (IntegrityError)                  -> 1 test falla
+
+=== Defectos reales encontrados por las pruebas de integracion y corregidos en esta fase
+- n8n 2.x NO ejecuta un workflow de errores sin publicar ("Workflow ... is not active and cannot be executed").
+- El 404 de Django llega como texto "404 - {...}" sin httpCode: se clasificaba unknown/manual (ahora http_4xx/no).
+- n8n no dice DE QUE TICKET era el fallo en un error crudo: los nodos tecnicos de WF2 se gestionan ahora por etapa.
+- Mis propias pruebas E4/E6/E7 se contaminaban con eventos de ejecuciones anteriores (estado residual): ahora solo
+  cuentan eventos posteriores a una marca de ejecucion.

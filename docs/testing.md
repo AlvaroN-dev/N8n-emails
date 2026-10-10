@@ -121,7 +121,7 @@ Ninguno de los dos últimos era un fallo de los workflows ni de la API: eran def
 
 ## Limitaciones conocidas y lo que NO se probó
 
-- **Capturas de pantalla (AC14): pendiente.** No hay ninguna en el repositorio; las tienes que hacer tú desde tu instancia (lista en el README).
+- **Las capturas de pantalla (AC14) muestran la IA simulada**: el resumen dice *Simulated AI summary*. No hay capturas de Gemini real.
 - **Reproducción por un tercero (AC13): pendiente.** La instalación limpia automática es un buen sustituto, pero no equivale a que otra persona siga el README en otra máquina.
 - **Gemini real solo con datos sintéticos** y en la capa gratuita, que usa el contenido para mejorar los productos de Google. Los nombres de modelo se retiran con el tiempo.
 - **Ningún SMTP real** (Mailpit nunca entrega correo). La plantilla de credencial SMTP no se ha probado contra un servidor real.
@@ -151,5 +151,5 @@ Ninguno de los dos últimos era un fallo de los workflows ni de la API: eran def
 | AC11 | Persistencia tras `restart` y tras `down`/`up` | **Aprobado** (T15, T16) |
 | AC12 | Sin secretos en Git | **Aprobado** (T20). Aún no hay commits: el escaneo cubre lo que `git add -A` añadiría |
 | AC13 | El README reproduce el proyecto | **Pendiente** (validación humana) |
-| AC14 | Capturas de ejecuciones reales | **Pendiente** (las haces tú) |
+| AC14 | Capturas de ejecuciones reales | **Aprobado**: 13 capturas reales hechas por el autor en `docs/screenshots/` (galería en el README), revisadas una a una antes de publicarlas: sin tokens, claves ni datos personales reales |
 | AC15 | Limitaciones y fallos conocidos documentados | **Aprobado** (este documento y `docs/security.md`) |

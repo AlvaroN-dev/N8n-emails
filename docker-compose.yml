@@ -1,0 +1,139 @@
+# ticket-triage-n8n - entorno LOCAL de desarrollo (no es una configuracion de produccion).
+#
+# Servicios: postgres (datos de la API), api (Django REST Framework), n8n y mailpit (SMTP de pruebas).
+#
+# Notas de seguridad:
+#  - Todos los puertos publicados se enlazan a 127.0.0.1 (no accesibles desde la red).
+#  - PostgreSQL y el SMTP de Mailpit (1025) solo existen dentro de la red interna de Compose.
+#  - Los secretos vienen del archivo .env (generado con scripts/setup.ps1), nunca de este archivo.
+
+name: ticket-triage-n8n
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tickets}
+      POSTGRES_USER: ${POSTGRES_USER:-tickets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD. Ejecuta .\scripts\setup.ps1}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    # API Django REST Framework. Se construye desde ./backend (usuario sin privilegios, gunicorn).
+    build:
+      context: ./backend
+    image: ticket-triage-api:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-8000}:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Falta DJANGO_SECRET_KEY. Ejecuta .\scripts\setup.ps1}
+      DJANGO_API_KEY: ${DJANGO_API_KEY:?Falta DJANGO_API_KEY. Ejecuta .\scripts\setup.ps1}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,api}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+      # Apagado por defecto. Solo desarrollo/pruebas (ver .env.example).
+      QA_TOOLS_ENABLED: ${QA_TOOLS_ENABLED:-false}
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-tickets}
+      POSTGRES_USER: ${POSTGRES_USER:-tickets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD. Ejecuta .\scripts\setup.ps1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # La imagen slim no trae curl: se usa Python. urlopen lanza excepcion si el estado no es 2xx.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  n8n:
+    # Version fijada a proposito (n8n 2.x). Evita `latest`: cambia sin avisar.
+    image: n8nio/n8n:2.42.6
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${N8N_HOST_PORT:-5678}:5678"
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Falta N8N_ENCRYPTION_KEY. Ejecuta .\scripts\setup.ps1}
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      # `WEBHOOK_URL` esta deprecada en n8n 2.42: N8N_WEBHOOK_URL cubre webhooks de test y de produccion.
+      N8N_WEBHOOK_URL: http://localhost:${N8N_HOST_PORT:-5678}/
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      TZ: ${GENERIC_TIMEZONE:-UTC}
+      # Privacidad: sin telemetria, avisos de version, plantillas remotas ni banners.
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_HIRING_BANNER_ENABLED: "false"
+      # n8n 2.x ya lo bloquea por defecto; se deja explicito: los workflows NO leen variables de entorno.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
+      N8N_LOG_LEVEL: info
+      # Limite del cuerpo de los webhooks, en MiB (por defecto 16). Un ticket cabe de sobra en 1.
+      N8N_PAYLOAD_SIZE_MAX: "1"
+      # Proteccion SSRF (viene APAGADA en 2.42; en n8n v3 pasara a estar activa por defecto): los nodos no pueden llamar a
+      # redes privadas ni al loopback salvo excepciones. Excepciones minimas, solo lo que usan los workflows:
+      #   - `api`: la API Django por su nombre en la red de Compose (resuelve a 172.x, rango bloqueado por defecto)
+      #   - 127.0.0.1: WF1 llama al webhook interno de WF2 (en este mismo contenedor)
+      # (El SMTP de Mailpit y Gemini no necesitan excepcion.)
+      N8N_SSRF_PROTECTION_ENABLED: "true"
+      N8N_SSRF_ALLOWED_HOSTNAMES: api
+      N8N_SSRF_ALLOWED_IP_RANGES: 127.0.0.1/32
+      # Seguridad: sin paquetes de comunidad no verificados; el Code node corta a los 60 s.
+      N8N_UNVERIFIED_PACKAGES_ENABLED: "false"
+      N8N_RUNNERS_TASK_TIMEOUT: "60"
+      # El historial de ejecuciones guarda los payloads (pueden contener datos personales):
+      # se conserva 7 dias (168 h) y despues se purga.
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "168"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+    volumes:
+      - n8n_data:/home/node/.n8n
+      # Workflows y credenciales a importar (solo lectura). Ver scripts/import-n8n.ps1.
+      - ./n8n:/import:ro
+    healthcheck:
+      # /healthz/readiness responde 200 solo cuando n8n esta listo y la base de datos responde.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5678/healthz/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+  mailpit:
+    # Servidor SMTP de pruebas: captura los correos y los muestra en una web y una API HTTP.
+    # Nunca entrega correos reales. Sin volumen: la bandeja es efimera a proposito.
+    image: axllent/mailpit:v1.31.4
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_HOST_PORT:-8025}:8025"
+    environment:
+      MP_MAX_MESSAGES: "500"
+      # Sin consultas salientes a GitHub para buscar versiones nuevas.
+      MP_DISABLE_VERSION_CHECK: "true"
+      TZ: ${GENERIC_TIMEZONE:-UTC}
+    # El healthcheck (`/mailpit readyz`) ya viene definido en la imagen.
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+  n8n_data:

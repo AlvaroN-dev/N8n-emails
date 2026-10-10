@@ -1,0 +1,45 @@
+Captura: 2026-10-09 17:51:55 -0500  (re-ejecutada en la Fase 5: T10c verifica ademas que WF3 registra el fallo de configuracion)
+n8n: 2.42.6 | IA REAL: Google Gemini (modelo gemini-3.5-flash-lite via endpoint compatible OpenAI), capa gratuita, datos SINTETICOS
+Comando: .\tests\integration\wf02-gemini.ps1
+
+== T10 - WF2 con IA REAL (Gemini), datos SINTETICOS (175156)
+      Credencial seleccionada por LLM_PROVIDER=gemini: llm-gemini.template.json
+      == Importando 5 credencial(es)
+      == Importando workflows
+      Deactivating workflow "03 - Error monitoring".
+      == Publicando 03-error-monitoring.json (id wfErrorMonitor03)
+      Publishing workflow with ID: wfErrorMonitor03 (current version)
+      == Esperando a que las versiones nuevas esten en marcha (n8n reconcilia las publicaciones tras arrancar)
+      Importacion terminada. n8n esta healthy y las versiones nuevas estan en marcha.
+PASS  T10a  IA REAL: el ticket se triaja con source=ai (la salida de Gemini cumplio el contrato)
+PASS  T10a  categoria y prioridad pertenecen a las listas permitidas y el resumen es una linea de <=280
+      respuesta REAL de Gemini -> category=billing priority=high
+      resumen: The customer reports a duplicate charge on their monthly bill and requests a refund for one of the payments.
+PASS  T10a  un unico correo entregado en Mailpit
+PASS  T10b  con una inyeccion real, el resultado es valido y SIGUE siendo un unico correo al equipo (nada a attacker@evil.test)
+      Gemini ante la inyeccion -> source=ai category=account priority=medium reason=''
+      Credencial seleccionada por LLM_PROVIDER=gemini: llm-gemini.template.json
+      == Importando 5 credencial(es)
+      == Importando workflows
+      Deactivating workflow "03 - Error monitoring".
+      == Publicando 03-error-monitoring.json (id wfErrorMonitor03)
+      Publishing workflow with ID: wfErrorMonitor03 (current version)
+      == Esperando a que las versiones nuevas esten en marcha (n8n reconcilia las publicaciones tras arrancar)
+      Importacion terminada. n8n esta healthy y las versiones nuevas estan en marcha.
+PASS  T10c  clave invalida: el ticket SE PROCESA igualmente (fallback) con motivo de CONFIGURACION (ai_config_error: Gemini responde 400)
+PASS  T10c  pero es un problema de CONFIGURACION: la ejecucion de WF2 queda en ERROR para que WF3 lo registre
+PASS  T10c  el fallo decodificado identifica el nodo y el ticket sin exponer la clave
+PASS  T10c  WF3 REGISTRA el fallo de configuracion de la IA: etapa Triage with AI, http_4xx, NO reintentable, con el ticket
+PASS  T10c  un unico correo, que declara el modo degradado
+== Restaurando LLM_PROVIDER y GEMINI_API_KEY originales y reimportando
+      Credencial seleccionada por LLM_PROVIDER=mock: llm-mock.template.json
+      == Importando 5 credencial(es)
+      == Importando workflows
+      Deactivating workflow "03 - Error monitoring".
+      == Publicando 03-error-monitoring.json (id wfErrorMonitor03)
+      Publishing workflow with ID: wfErrorMonitor03 (current version)
+      == Esperando a que las versiones nuevas esten en marcha (n8n reconcilia las publicaciones tras arrancar)
+      Importacion terminada. n8n esta healthy y las versiones nuevas estan en marcha.
+      .env restaurado y verificado (identico al original)
+== Resultado: 9 comprobaciones, 9 correctas, 0 fallidas
+exit code: 0

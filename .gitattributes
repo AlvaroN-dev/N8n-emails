@@ -1,0 +1,7 @@
+# Normaliza finales de linea a LF en el repositorio (evita romper scripts y JSON en contenedores Linux)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary

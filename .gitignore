@@ -1,0 +1,34 @@
+# --- Secretos y configuracion local (NUNCA versionar) ---
+.env
+.env.*
+!.env.example
+*.bak
+*.bak-*
+
+# Credenciales de n8n generadas con secretos reales (las plantillas *.template.json si se versionan)
+n8n/credentials/generated/
+
+# --- Python / Django ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.sqlite3
+staticfiles/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Editores y sistema ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Herramientas de asistente de IA (configuracion local) ---
+.claude/
+
+# --- Temporales ---
+*.log
+tmp/

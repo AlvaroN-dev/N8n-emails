@@ -1,0 +1,60 @@
+Captura: 2026-10-09 12:47:18 -0500
+Comando: .\scripts\test-workflows.ps1
+
+== 1/2 JSON versionados al dia respecto al codigo
+ok: 01-ticket-intake.json
+ok: 02-ai-triage-notify.json
+== 2/2 Tests unitarios de los nodos Code (node --test)
+✔ premisa: n8n SI reescribe un mensaje que contiene un codigo de red (689.889687ms)
+✔ solucion: el mensaje codificado sobrevive intacto a NodeOperationError con cualquiera de los 16 codigos (319.23556ms)
+✔ el mensaje codificado nunca contiene ninguno de los codigos (ni en minusculas) (10.548026ms)
+✔ type y retryable quedan legibles en el mensaje (10.449148ms)
+✔ ida y vuelta con caracteres no ASCII, comillas y saltos de linea (21.77704ms)
+✔ decodeFailure devuelve null ante mensajes que no son fallos gestionados (38.032323ms)
+✔ un fallo de red produce un failure_message que decodifica al failure y sobrevive a NodeOperationError (20.508073ms)
+✔ un 500 de Django tambien lleva failure_message; un 201 no (34.912527ms)
+✔ classifyError reconoce tambien los mensajes reescritos por n8n (40.345315ms)
+✔ 201: acepta, responde 201 y lanza WF2 (13.999586ms)
+✔ 200 duplicado reciente: responde duplicate y NO lanza WF2 (evita doble correo) (9.173179ms)
+✔ 200 duplicado antiguo y sin notificar: se considera atascado y se reprocesa (17.923953ms)
+✔ 200 duplicado antiguo pero ya notificado: nunca se reprocesa (9.090823ms)
+✔ 200 con fecha ilegible: no se reprocesa (ante la duda, no duplicar efectos) (8.80791ms)
+✔ 400 de Django: se devuelve al cliente tal cual y NO se registra como fallo (6.752746ms)
+✔ 401/403/404 de Django: fallo de configuracion -> 502, tipo http_4xx, no reintentable (36.072086ms)
+✔ 500/503 de Django: 502, tipo http_5xx, reintentable (36.542729ms)
+✔ respuesta 2xx con forma inesperada (sin id): no se da por buena (49.388513ms)
+✔ un external_id con formato no permitido (p. ej. un email) nunca llega al registro de fallos (11.875176ms)
+✔ timeout -> 504 upstream_timeout, tipo timeout (33.309711ms)
+✔ API caida -> 503 upstream_unavailable, tipo connection (27.866947ms)
+✔ error no reconocido -> 502, tipo unknown, decide una persona (10.896186ms)
+✔ el detalle registrado es corto y de una sola linea (9.814005ms)
+✔ WF2 no arranco: se responde 502 con el id del ticket guardado y se registra (19.069036ms)
+✔ triage accepted: devuelve la respuesta preparada y ningun fallo (15.496921ms)
+✔ cuerpo valido: pasa y reenvia solo los campos conocidos (9.892961ms)
+✔ source es opcional; null equivale a ausente (15.190523ms)
+✔ campos obligatorios ausentes: 400 con un detalle por campo (mismo formato que Django) (6.624449ms)
+✔ null cuenta como ausente (6.201754ms)
+✔ tipos incorrectos: numero, array, objeto y booleano se rechazan (17.708259ms)
+✔ source de tipo incorrecto se rechaza (5.220013ms)
+✔ cuerpo que no es un objeto JSON: null, array, texto, numero, indefinido (21.806084ms)
+✔ el borde NO aplica reglas de negocio: cadena vacia o email raro llegan a Django (3.518047ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1318.581355
+RESULTADO: OK
+
+=== Mutation testing de los nodos Code (observado en la sesion: codigo roto en una copia y suite ejecutada)
+- duplicado antiguo ya NO se reprocesa            -> 1 test falla
+- duplicado reciente SI lanza WF2                  -> 3 tests fallan
+- external_id sin sanear                           -> 1 test falla
+- validacion sin comprobar tipo string             -> 1 test falla
+- timeout clasificado como conexion                -> 1 test falla
+- 401 de Django marcado reintentable               -> 1 test falla
+
+=== Mutation testing de la INTEGRACION (workflow desplegado roto a proposito: los duplicados lanzan WF2)
+- suite de integracion contra el workflow mutado   -> T14 y T14b FALLAN (44 de 46 comprobaciones siguen pasando)

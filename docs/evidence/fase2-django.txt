@@ -1,0 +1,124 @@
+
+=== Fecha de captura
+2026-10-09 12:02:44 -0500
+
+=== Versiones dentro del contenedor
+Python 3.13.16
+Django              5.2.18
+djangorestframework 3.18.3
+gunicorn            26.2.0
+psycopg             3.3.6
+
+=== docker compose ps
+SERVICE    IMAGE                     STATUS                    PORTS
+api        ticket-triage-api:local   Up 12 seconds (healthy)   127.0.0.1:8000->8000/tcp
+mailpit    axllent/mailpit:v1.31.4   Up 10 minutes (healthy)   127.0.0.1:8025->8025/tcp
+n8n        n8nio/n8n:2.42.6          Up 10 minutes (healthy)   127.0.0.1:5678->5678/tcp
+postgres   postgres:17-alpine        Up 2 minutes (healthy)    5432/tcp
+
+=== manage.py test -v 2 (logs silenciados con DJANGO_LOG_LEVEL=CRITICAL)
+Found 50 test(s).
+Creating test database for alias 'default' ('test_tickets')...
+  Synchronize unmigrated apps: rest_framework
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+System check identified no issues (0 silenced).
+test_el_mensaje_largo_se_trunca_en_lugar_de_fallar (tickets.tests.test_error_events.ErrorEventCreateTests.test_el_mensaje_largo_se_trunca_en_lugar_de_fallar) ... ok
+test_el_mensaje_se_redacta_antes_de_guardarse (tickets.tests.test_error_events.ErrorEventCreateTests.test_el_mensaje_se_redacta_antes_de_guardarse) ... ok
+test_registra_un_evento_valido (tickets.tests.test_error_events.ErrorEventCreateTests.test_registra_un_evento_valido) ... ok
+test_solo_workflow_name_y_error_type_son_obligatorios (tickets.tests.test_error_events.ErrorEventCreateTests.test_solo_workflow_name_y_error_type_son_obligatorios) ... ok
+test_tipo_de_error_o_retryable_invalidos_devuelven_400 (tickets.tests.test_error_events.ErrorEventCreateTests.test_tipo_de_error_o_retryable_invalidos_devuelven_400) ... ok
+test_filtra_por_tipo_y_por_ticket (tickets.tests.test_error_events.ErrorEventListTests.test_filtra_por_tipo_y_por_ticket) ... ok
+test_lista_primero_los_mas_recientes (tickets.tests.test_error_events.ErrorEventListTests.test_lista_primero_los_mas_recientes) ... ok
+test_pagina_con_limit (tickets.tests.test_error_events.ErrorEventListTests.test_pagina_con_limit) ... ok
+test_api_key_correcta_permite_el_acceso (tickets.tests.test_platform.AuthenticationTests.test_api_key_correcta_permite_el_acceso) ... ok
+test_api_key_incorrecta_devuelve_401 (tickets.tests.test_platform.AuthenticationTests.test_api_key_incorrecta_devuelve_401) ... ok
+test_falla_cerrado_si_el_servidor_no_tiene_clave_configurada (tickets.tests.test_platform.AuthenticationTests.test_falla_cerrado_si_el_servidor_no_tiene_clave_configurada) ... ok
+test_sin_api_key_devuelve_401_con_cabecera_www_authenticate (tickets.tests.test_platform.AuthenticationTests.test_sin_api_key_devuelve_401_con_cabecera_www_authenticate) ... ok
+test_todos_los_endpoints_protegidos_exigen_clave (tickets.tests.test_platform.AuthenticationTests.test_todos_los_endpoints_protegidos_exigen_clave) ... ok
+test_content_type_no_json_devuelve_415 (tickets.tests.test_platform.ErrorFormatTests.test_content_type_no_json_devuelve_415) ... ok
+test_excepcion_inesperada_devuelve_500_json_sin_filtrar_datos_ni_logs (tickets.tests.test_platform.ErrorFormatTests.test_excepcion_inesperada_devuelve_500_json_sin_filtrar_datos_ni_logs) ... ok
+test_json_malformado_devuelve_400_parse_error (tickets.tests.test_platform.ErrorFormatTests.test_json_malformado_devuelve_400_parse_error) ... ok
+test_metodo_no_permitido_devuelve_405_json (tickets.tests.test_platform.ErrorFormatTests.test_metodo_no_permitido_devuelve_405_json) ... ok
+test_ruta_inexistente_devuelve_json_404 (tickets.tests.test_platform.ErrorFormatTests.test_ruta_inexistente_devuelve_json_404) ... ok
+test_health_devuelve_503_si_la_base_de_datos_falla (tickets.tests.test_platform.HealthTests.test_health_devuelve_503_si_la_base_de_datos_falla) ... ok
+test_health_ok_sin_autenticacion (tickets.tests.test_platform.HealthTests.test_health_ok_sin_autenticacion) ... ok
+test_los_logs_no_contienen_email_ni_texto_del_ticket (tickets.tests.test_platform.LoggingPrivacyTests.test_los_logs_no_contienen_email_ni_texto_del_ticket) ... ok
+test_campos_obligatorios_ausentes_devuelve_400_indicando_cada_campo (tickets.tests.test_tickets.TicketCreateTests.test_campos_obligatorios_ausentes_devuelve_400_indicando_cada_campo) ... ok
+test_caracteres_de_control_devuelven_400_y_no_un_500 (tickets.tests.test_tickets.TicketCreateTests.test_caracteres_de_control_devuelven_400_y_no_un_500) ... ok
+test_cuerpo_que_no_es_un_objeto_devuelve_400 (tickets.tests.test_tickets.TicketCreateTests.test_cuerpo_que_no_es_un_objeto_devuelve_400) ... ok
+test_duplicado_devuelve_200_y_no_crea_otra_fila (tickets.tests.test_tickets.TicketCreateTests.test_duplicado_devuelve_200_y_no_crea_otra_fila) ... ok
+test_longitudes_maximas (tickets.tests.test_tickets.TicketCreateTests.test_longitudes_maximas) ... ok
+test_los_espacios_alrededor_se_recortan (tickets.tests.test_tickets.TicketCreateTests.test_los_espacios_alrededor_se_recortan) ... ok
+test_mensaje_multilinea_es_valido (tickets.tests.test_tickets.TicketCreateTests.test_mensaje_multilinea_es_valido) ... ok
+test_solicitud_valida_devuelve_201_y_persiste (tickets.tests.test_tickets.TicketCreateTests.test_solicitud_valida_devuelve_201_y_persiste) ... ok
+test_source_es_opcional_y_vale_api_por_defecto (tickets.tests.test_tickets.TicketCreateTests.test_source_es_opcional_y_vale_api_por_defecto) ... ok
+test_tipos_incorrectos_devuelven_400 (tickets.tests.test_tickets.TicketCreateTests.test_tipos_incorrectos_devuelven_400) ... ok
+test_valores_fuera_de_rango_devuelven_400 (tickets.tests.test_tickets.TicketCreateTests.test_valores_fuera_de_rango_devuelven_400) ... ok
+test_devuelve_el_ticket (tickets.tests.test_tickets.TicketDetailTests.test_devuelve_el_ticket) ... ok
+test_inexistente_devuelve_404_json (tickets.tests.test_tickets.TicketDetailTests.test_inexistente_devuelve_404_json) ... ok
+test_primera_marca_gana_y_la_segunda_informa_ya_notificado (tickets.tests.test_tickets.TicketNotifiedTests.test_primera_marca_gana_y_la_segunda_informa_ya_notificado) ... ok
+test_sin_triage_previo_devuelve_409 (tickets.tests.test_tickets.TicketNotifiedTests.test_sin_triage_previo_devuelve_409) ... ok
+test_ticket_inexistente_devuelve_404 (tickets.tests.test_tickets.TicketNotifiedTests.test_ticket_inexistente_devuelve_404) ... ok
+test_faltan_campos_devuelve_400 (tickets.tests.test_tickets.TicketTriageTests.test_faltan_campos_devuelve_400) ... ok
+test_guarda_el_triage_y_avanza_el_estado (tickets.tests.test_tickets.TicketTriageTests.test_guarda_el_triage_y_avanza_el_estado) ... ok
+test_registra_el_fallback_con_su_motivo (tickets.tests.test_tickets.TicketTriageTests.test_registra_el_fallback_con_su_motivo) ... ok
+test_repetir_el_triage_es_idempotente (tickets.tests.test_tickets.TicketTriageTests.test_repetir_el_triage_es_idempotente) ... ok
+test_solo_acepta_patch (tickets.tests.test_tickets.TicketTriageTests.test_solo_acepta_patch) ... ok
+test_ticket_inexistente_devuelve_404 (tickets.tests.test_tickets.TicketTriageTests.test_ticket_inexistente_devuelve_404) ... ok
+test_un_triage_posterior_no_retrocede_un_ticket_notificado (tickets.tests.test_tickets.TicketTriageTests.test_un_triage_posterior_no_retrocede_un_ticket_notificado) ... ok
+test_valores_invalidos_devuelven_400_y_no_modifican_el_ticket (tickets.tests.test_tickets.TicketTriageTests.test_valores_invalidos_devuelven_400_y_no_modifican_el_ticket) ... ok
+test_no_destruye_ips_ni_versiones (tickets.tests.test_platform.RedactPiiTests.test_no_destruye_ips_ni_versiones) ... ok
+test_redacta_correos (tickets.tests.test_platform.RedactPiiTests.test_redacta_correos) ... ok
+test_redacta_telefonos (tickets.tests.test_platform.RedactPiiTests.test_redacta_telefonos) ... ok
+test_texto_sin_datos_personales_queda_igual (tickets.tests.test_platform.RedactPiiTests.test_texto_sin_datos_personales_queda_igual) ... ok
+test_cinco_peticiones_en_paralelo_crean_un_unico_ticket (tickets.tests.test_tickets.DuplicateRaceTests.test_cinco_peticiones_en_paralelo_crean_un_unico_ticket) ... ok
+
+----------------------------------------------------------------------
+Ran 50 tests in 0.423s
+
+OK
+Destroying test database for alias 'default' ('test_tickets')...
+
+=== manage.py makemigrations --check --dry-run
+No changes detected
+
+=== manage.py check --deploy (avisos aceptados; se documentan en docs/security.md)
+System check identified some issues:
+
+WARNINGS:
+?: (security.W003) You don't appear to be using Django's built-in cross-site request forgery protection via the middleware ('django.middleware.csrf.CsrfViewMiddleware' is not in your MIDDLEWARE). Enabling the middleware is the safest approach to ensure you don't leave any holes.
+?: (security.W004) You have not set a value for the SECURE_HSTS_SECONDS setting. If your entire site is served only over SSL, you may want to consider setting a value and enabling HTTP Strict Transport Security. Be sure to read the documentation first; enabling HSTS carelessly can cause serious, irreversible problems.
+?: (security.W008) Your SECURE_SSL_REDIRECT setting is not set to True. Unless your site should be available over both SSL and non-SSL connections, you may want to either set this setting True or configure a load balancer or reverse-proxy server to redirect all connections to HTTPS.
+
+System check identified 3 issues (0 silenced).
+
+=== Proceso sin privilegios (id)
+uid=10001(appuser) gid=999(appuser) groups=999(appuser)
+
+=== scripts/smoke-api.ps1 contra gunicorn real
+== Smoke test API: http://127.0.0.1:8000
+PASS  health 200 sin autenticacion
+PASS  sin API key -> 401 unauthorized
+PASS  API key incorrecta -> 401
+PASS  alta valida -> 201 duplicate=false
+PASS  mismo external_id -> 200 duplicate=true y mismo id
+PASS  cuerpo vacio -> 400 con detalle de campos
+PASS  subject numerico (tipo incorrecto) -> 400
+PASS  GET ticket -> 200
+PASS  PATCH triage -> 200 status=triaged
+PASS  triage con categoria invalida -> 400
+PASS  notified: 1a vez already_notified=false, 2a vez true
+PASS  notified sin triage previo -> 409 not_triaged
+PASS  error-event -> 201 con el email redactado
+PASS  ruta inexistente -> 404 JSON
+== Resultado: 14 correctas, 0 fallidas
+exit code del smoke: 0
+
+=== Mutation testing (observado en la sesion: codigo roto en un contenedor efimero y suite ejecutada)
+- StrictCharField acepta enteros            -> suite FALLA (6 fallos)
+- create() en lugar de get_or_create()      -> suite FALLA (2 fallos)
+- autenticacion acepta cualquier clave      -> suite FALLA (2 fallos)
+- validacion de caracteres de control off   -> suite FALLA (4 fallos, tras anadir el caso \x07)
+- el log del alta incluye el email          -> suite FALLA (1 fallo)

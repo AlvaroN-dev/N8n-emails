@@ -38,7 +38,9 @@ No necesitas Python ni Node en tu equipo: todo corre dentro de contenedores.
 
 ## Inicio rápido
 
-Desde la raíz del repositorio, en PowerShell:
+Desde la raíz del repositorio, en **Windows PowerShell**:
+
+> Si PowerShell responde que *la ejecución de scripts está deshabilitada*, ejecuta antes esto en esa misma ventana (solo afecta a esa ventana y se pierde al cerrarla): `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
 
 ```powershell
 # 1) Crea .env con secretos aleatorios (nunca sobrescribe uno existente; .env NO se sube a Git)
@@ -169,7 +171,7 @@ n8n/src/            workflows como código: builder, nodos Code, herramientas de
 n8n/workflows/      JSON generado de los 3 workflows (se importa con import-n8n.ps1)
 n8n/credentials/    plantillas SIN secretos; import-n8n.ps1 las rellena desde .env
 n8n/tests/          tests unitarios (node --test, dentro de la imagen de n8n)
-scripts/            setup, import, build, tests, smoke, escaneo de secretos, instalación limpia
+scripts/            setup, import, build, tests, smoke, escaneo de secretos, instalación limpia, asistente de capturas
 tests/integration/  suites de integración PowerShell con inyección real de fallos
 docs/               api, arquitectura, WF2, WF3, seguridad, pruebas, CV y evidencias
 ```
@@ -186,25 +188,58 @@ docs/               api, arquitectura, WF2, WF3, seguridad, pruebas, CV y eviden
 | [`docs/testing.md`](docs/testing.md) | Matriz de pruebas con estado real, defectos encontrados, limitaciones |
 | [`docs/cv.md`](docs/cv.md) | Cómo describir este proyecto con honestidad |
 
-## Capturas de pantalla (las haces tú)
+## Capturas de pantalla
 
-**El repositorio no incluye capturas**: no se fabrican. Hazlas desde tu propia instancia, guárdalas en `docs/screenshots/` y enlázalas aquí si quieres. Usa solo datos sintéticos y **no captures `.env`, tokens ni claves**.
+Capturas **reales** de una instancia local, hechas por el autor con datos sintéticos. La IA que se ve es el modelo **simulado** (por eso el resumen dice *Simulated AI summary*); no hay capturas de Gemini real. Están en [`docs/screenshots/`](docs/screenshots/) y se hicieron con [`scripts/demo-capturas.ps1`](scripts/demo-capturas.ps1), un asistente que ejecuta cada paso y guarda tu captura con el nombre correcto, por si quieres repetirlas en tu equipo.
 
-| Archivo sugerido | Qué mostrar |
-|---|---|
-| `01-compose-ps.png` | `docker compose ps` con los 4 servicios *healthy* |
-| `02-n8n-workflows.png` | Lista de workflows en n8n, los 3 publicados |
-| `03-wf01-canvas.png` | Lienzo de *01 - Ticket intake* |
-| `04-wf02-canvas.png` | Lienzo de *02 - AI triage and notification* |
-| `05-wf03-canvas.png` | Lienzo de *03 - Error monitoring* |
-| `06-respuesta-201.png` | PowerShell: alta válida (`accepted`) y duplicado (`duplicate`) |
-| `07-validacion-400.png` | PowerShell: respuesta `400 validation_error` |
-| `08-mailpit.png` | Correo de triage recibido en Mailpit |
-| `09-ticket-notified.png` | `GET /api/tickets/{id}/` con categoría, prioridad y resumen |
-| `10-ejecuciones-ok.png` | Pestaña *Executions* de n8n con WF1 y WF2 en verde |
-| `11-fallo-y-wf3.png` | Una ejecución en error (p. ej. `QA-500-1`) y la ejecución de WF3 que la registra |
-| `12-error-events.png` | `GET /api/error-events/` con el evento registrado |
-| `13-tests.png` | Salida de los tests de Django y de una suite de integración |
+### El sistema en marcha
+
+![Los 4 servicios healthy en docker compose ps](docs/screenshots/01-compose-ps.png)
+*Los cuatro servicios (api, mailpit, n8n, postgres) healthy; solo se publican puertos en 127.0.0.1.*
+
+### Los tres workflows
+
+![Lista de workflows de n8n, los tres publicados](docs/screenshots/02-n8n-workflows.png)
+*Los tres workflows importados y publicados.*
+
+![Lienzo del workflow 01 - Ticket intake](docs/screenshots/03-wf01-canvas.png)
+*WF1 `01 - Ticket intake`: webhook, validación, alta en Django, lanzamiento de WF2 y respuesta al cliente.*
+
+![Lienzo del workflow 02 - AI triage and notification](docs/screenshots/04-wf02-canvas.png)
+*WF2 `02 - AI triage and notification`: redacción de datos, IA, validación estricta, correo y guardia anti-duplicado; abajo, los nodos de fallo por etapa.*
+
+![Lienzo del workflow 03 - Error monitoring](docs/screenshots/05-wf03-canvas.png)
+*WF3 `03 - Error monitoring`: registra el fallo en Django y, si Django no responde, envía una alerta por correo.*
+
+### Flujo normal
+
+![Alta válida (accepted) y duplicado (duplicate)](docs/screenshots/06-respuesta-201.png)
+*Un alta válida responde `accepted`; reenviar el mismo `external_id` responde `duplicate` sin crear nada.*
+
+![Correo de triage recibido en Mailpit](docs/screenshots/08-mailpit.png)
+*El correo al equipo con prioridad, categoría, resumen y el método de triage.*
+
+![Ticket notificado, con categoría, prioridad y resumen](docs/screenshots/09-ticket-notified.png)
+*`GET /api/tickets/{id}/`: el ticket pasó por `received → triaged → notified`.*
+
+![Ejecuciones en verde de WF1 y WF2 en n8n](docs/screenshots/10-ejecuciones-ok.png)
+*Las ejecuciones de WF1 y WF2 en n8n, en verde.*
+
+### Entradas inválidas y fallos
+
+![Respuesta 400 validation_error](docs/screenshots/07-validacion-400.png)
+*Falta un campo obligatorio: `400 validation_error` con el detalle del campo.*
+
+![Fallo de WF1 y ejecución de WF3 que lo registra](docs/screenshots/11-fallo-y-wf3.png)
+*Un fallo de Django (herramienta de QA `QA-500-…`): WF1 termina en error y WF3 se ejecuta justo después.*
+
+![Evento de error registrado en Django](docs/screenshots/12-error-events.png)
+*`GET /api/error-events/`: el fallo registrado con workflow, etapa, tipo y si es reintentable.*
+
+### Pruebas
+
+![Tests de Django y smoke de la API](docs/screenshots/13-tests.png)
+*84 tests de Django y el smoke de la API (14/14). La matriz completa está en [`docs/testing.md`](docs/testing.md).*
 
 ## Limitaciones conocidas
 
@@ -215,7 +250,7 @@ docs/               api, arquitectura, WF2, WF3, seguridad, pruebas, CV y eviden
 - **n8n responde 422** (JSON malformado) y un **500 genérico** (cuerpo mayor de 1 MiB) en lugar de un 413: es comportamiento de n8n.
 - **El historial de ejecuciones de n8n guarda los payloads** (168 h): no uses datos reales sin reducirlo.
 - **Gemini real solo se probó con datos sintéticos** y en capa gratuita; **no se probó contra un SMTP real**; **sin pruebas de carga**.
-- Pendiente de validación humana: que otra persona siga este README en otra máquina, y las capturas de pantalla.
+- Pendiente de validación humana: que otra persona siga este README en otra máquina.
 
 ## Solución de problemas
 

@@ -1,0 +1,29 @@
+Captura: 2026-10-09 19:38:58 -05:00
+n8n: 2.42.6 | SSRF activo (N8N_SSRF_PROTECTION_ENABLED=true, allow-list: api, 127.0.0.1/32) | Fase 6: regresion
+Comando: .\tests\integration\production-mode.ps1   (QA_TOOLS_ENABLED=false solo en la API; restaura el modo desarrollo al terminar)
+
+== Modo produccion (QA_TOOLS_ENABLED=false) (193858)
+PASS  PROD  punto de partida: modo desarrollo (QA activo) y el LLM simulado existe (no responde 404)
+ Container ticket-triage-n8n-api-1 Recreate 
+ Container ticket-triage-n8n-api-1 Recreated 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+ Container ticket-triage-n8n-api-1 Waiting 
+ Container ticket-triage-n8n-api-1 Healthy 
+PASS  PROD  la API se recrea con QA_TOOLS_ENABLED=false
+PASS  PROD  el LLM simulado NO existe: 404
+PASS  PROD  el prefijo QA-500- ya no inyecta un 500: el ticket se crea normalmente (201)
+PASS  PROD  el prefijo QA-SLOW- ya no ralentiza: 201 en menos de 5 s
+PASS  PROD  el log de arranque no declara la inyeccion de fallos activa
+PASS  PROD  los tests de Django pasan tambien en modo produccion (84 tests)
+ Container ticket-triage-n8n-api-1 Recreate 
+ Container ticket-triage-n8n-api-1 Recreated 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+ Container ticket-triage-n8n-api-1 Waiting 
+ Container ticket-triage-n8n-api-1 Healthy 
+PASS  PROD  restaurado: modo desarrollo otra vez (QA activo y LLM simulado presente)
+PASS  PROD  tras restaurar, el flujo completo vuelve a funcionar (201 y ticket notificado)
+== Resultado: 9 comprobaciones, 9 correctas, 0 fallidas
+
+exit code: 0

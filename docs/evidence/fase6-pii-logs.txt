@@ -1,0 +1,19 @@
+Captura: 2026-10-09 19:35:32 -05:00
+n8n: 2.42.6 | SSRF activo (N8N_SSRF_PROTECTION_ENABLED=true, allow-list: api, 127.0.0.1/32) | Fase 6: regresion
+Comando: .\tests\integration\pii-logs.ps1   (T19, tras todas las suites de la Fase 6; control positivo incluido)
+
+== T19 - PII y secretos en los logs
+PASS  T19   control positivo: el detector SI encuentra correo y telefono en un log que los contiene
+PASS  T19   logs de 'api': 788 lineas analizadas (minimo 200 para que la prueba tenga valor)
+PASS  T19   logs de 'api': 0 lineas con datos personales de los tickets
+PASS  T19   logs de 'api': 0 lineas con secretos de .env
+PASS  T19   logs de 'n8n': 246 lineas analizadas (minimo 200 para que la prueba tenga valor)
+PASS  T19   logs de 'n8n': 0 lineas con datos personales de los tickets
+PASS  T19   logs de 'n8n': 0 lineas con secretos de .env
+PASS  T19   logs de 'postgres': 489 lineas analizadas (minimo 200 para que la prueba tenga valor)
+PASS  T19   logs de 'postgres': 0 lineas con datos personales de los tickets
+PASS  T19   logs de 'postgres': 0 lineas con secretos de .env
+PASS  T19   el historial de ejecuciones de n8n (contiene los payloads) tiene retencion finita (true:168)
+== Resultado: 11 comprobaciones, 11 correctas, 0 fallidas
+
+exit code: 0

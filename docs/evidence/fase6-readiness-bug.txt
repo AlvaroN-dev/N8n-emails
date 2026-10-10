@@ -1,0 +1,34 @@
+NOTA (anotacion del autor, no es salida de la herramienta):
+Primer intento de la regresion de Fase 6. Las suites WF1, WF2 y WF3 terminaron con exit 1 ANTES de ejecutar ninguna
+comprobacion: el chequeo previo "Wait-WorkflowsReady" (n8n/src/tools/published.js) daba ready=false en la instalacion
+real. Causa raiz (verificada leyendo n8n 2.42.6): n8n BORRA las filas `completed` de workflow_publication_outbox a la
+hora (limpieza cada 20 min) y la herramienta exigia que esa fila existiera. La instancia llevaba >1 h arriba, asi que
+la fila ya no existia aunque los 3 workflows estaban activados y funcionando. NO era un fallo de los workflows.
+Correccion: published.js ya no exige la fila si hay triggers activados de la version activa (+ prueba unitaria
+n8n/tests/published-readiness.test.js con control de mutacion). Las suites se repitieron: ver fase6-regresion-wf0*.txt.
+La suite de Gemini (que reimporta y por tanto regenera las filas) SI paso en este primer intento: fase6-regresion-gemini.txt.
+-----------------------------------------------------------------------------------------------------------------
+Captura: 2026-10-09 19:12:17 -05:00
+n8n: 2.42.6 | SSRF activo (N8N_SSRF_PROTECTION_ENABLED=true, allow-list: api, 127.0.0.1/32) | Fase 6: regresion
+Comando: .\tests\integration\wf01-intake.ps1   (suite completa con SSRF activo)
+
+== WF1 - Ticket intake: pruebas de integracion (20261009191217)
+== Estado previo: servicios healthy
+Los workflows no estan en marcha tras 120 s: [{"id":"wfTicketIntake01","published":true,"activeVersionId":"73750eda-ea9
+6-4c71-9559-87cfa769ae9e","reconciled":false,"triggers":1,"activated":1,"pending":0,"ready":false},{"id":"wfAiTriageNot
+ify","published":true,"activeVersionId":"78ae0f02-ccb3-46f0-9adf-6394100b9209","reconciled":false,"triggers":2,"activat
+ed":2,"pending":0,"ready":false},{"id":"wfErrorMonitor03","published":true,"activeVersionId":"0541ea7c-c89b-47b2-8afc-c
+b7559193df0","reconciled":false,"triggers":2,"activated":2,"pending":0,"ready":false}]
+En C:\Users\Usuario\Documents\N8N\tests\integration\lib.ps1: 258 Carácter: 41
++ ... deadline) { throw "Los workflows no estan en marcha tras $TimeoutSec  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Los workflows n..."ready":false}]:String) [], RuntimeException
+    + FullyQualifiedErrorId : Los workflows no estan en marcha tras 120 s: [{"id":"wfTicketIntake01","published":true, 
+   "activeVersionId":"73750eda-ea96-4c71-9559-87cfa769ae9e","reconciled":false,"triggers":1,"activated":1,"pending":0  
+  ,"ready":false},{"id":"wfAiTriageNotify","published":true,"activeVersionId":"78ae0f02-ccb3-46f0-9adf-6394100b9209"   
+ ,"reconciled":false,"triggers":2,"activated":2,"pending":0,"ready":false},{"id":"wfErrorMonitor03","published":tru    
+e,"activeVersionId":"0541ea7c-c89b-47b2-8afc-cb7559193df0","reconciled":false,"triggers":2,"activated":2,"pending"    
+:0,"ready":false}]
+ 
+
+exit code: 1

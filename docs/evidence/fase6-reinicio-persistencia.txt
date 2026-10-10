@@ -1,0 +1,75 @@
+Captura: 2026-10-09 19:35:35 -05:00
+n8n: 2.42.6 | SSRF activo (N8N_SSRF_PROTECTION_ENABLED=true, allow-list: api, 127.0.0.1/32) | Fase 6: regresion
+Comando: .\tests\integration\restart-persistence.ps1   (T15 restart + T16 down/up SIN -v)
+
+== T15/T16 - reinicio y persistencia (193535)
+      estado inicial: tickets=175 eventos=42 workflows=3 (publicados 3) credenciales=5 owners=1
+PASS  T15   punto de partida valido: 3 workflows publicados, >=5 credenciales y un owner
+ Container ticket-triage-n8n-postgres-1 Restarting 
+ Container ticket-triage-n8n-mailpit-1 Restarting 
+ Container ticket-triage-n8n-n8n-1 Restarting 
+ Container ticket-triage-n8n-api-1 Restarting 
+ Container ticket-triage-n8n-postgres-1 Started 
+ Container ticket-triage-n8n-api-1 Started 
+ Container ticket-triage-n8n-n8n-1 Started 
+ Container ticket-triage-n8n-mailpit-1 Started 
+PASS  T15   tras `docker compose restart` los 4 servicios vuelven healthy
+PASS  T15   PostgreSQL conserva todos los datos (tickets y eventos)
+PASS  T15   n8n conserva los mismos workflows (todos publicados), credenciales y owner
+PASS  T15   el flujo completo funciona tras el reinicio: 201, ticket notificado con IA y UN correo
+ Container ticket-triage-n8n-api-1 Stopping 
+ Container ticket-triage-n8n-n8n-1 Stopping 
+ Container ticket-triage-n8n-mailpit-1 Stopping 
+ Container ticket-triage-n8n-n8n-1 Stopped 
+ Container ticket-triage-n8n-n8n-1 Removing 
+ Container ticket-triage-n8n-n8n-1 Removed 
+ Container ticket-triage-n8n-api-1 Stopped 
+ Container ticket-triage-n8n-api-1 Removing 
+ Container ticket-triage-n8n-api-1 Removed 
+ Container ticket-triage-n8n-postgres-1 Stopping 
+ Container ticket-triage-n8n-mailpit-1 Stopped 
+ Container ticket-triage-n8n-mailpit-1 Removing 
+ Container ticket-triage-n8n-mailpit-1 Removed 
+ Container ticket-triage-n8n-postgres-1 Stopped 
+ Container ticket-triage-n8n-postgres-1 Removing 
+ Container ticket-triage-n8n-postgres-1 Removed 
+ Network ticket-triage-n8n_default Removing 
+ Network ticket-triage-n8n_default Removed 
+PASS  T16   tras `down` no queda ningun contenedor, pero SI los 2 volumenes (n8n_data y postgres_data)
+ Network ticket-triage-n8n_default Creating 
+ Network ticket-triage-n8n_default Creating 
+ Network ticket-triage-n8n_default Created 
+ Network ticket-triage-n8n_default Created 
+ Container ticket-triage-n8n-n8n-1 Creating 
+ Container ticket-triage-n8n-mailpit-1 Creating 
+ Container ticket-triage-n8n-postgres-1 Creating 
+ Container ticket-triage-n8n-mailpit-1 Created 
+ Container ticket-triage-n8n-n8n-1 Created 
+ Container ticket-triage-n8n-postgres-1 Created 
+ Container ticket-triage-n8n-api-1 Creating 
+ Container ticket-triage-n8n-api-1 Created 
+ Container ticket-triage-n8n-n8n-1 Starting 
+ Container ticket-triage-n8n-postgres-1 Starting 
+ Container ticket-triage-n8n-mailpit-1 Starting 
+ Container ticket-triage-n8n-n8n-1 Started 
+ Container ticket-triage-n8n-postgres-1 Started 
+ Container ticket-triage-n8n-postgres-1 Waiting 
+ Container ticket-triage-n8n-mailpit-1 Started 
+ Container ticket-triage-n8n-postgres-1 Healthy 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+ Container ticket-triage-n8n-api-1 Waiting 
+ Container ticket-triage-n8n-n8n-1 Waiting 
+ Container ticket-triage-n8n-mailpit-1 Waiting 
+ Container ticket-triage-n8n-postgres-1 Waiting 
+ Container ticket-triage-n8n-mailpit-1 Healthy 
+ Container ticket-triage-n8n-postgres-1 Healthy 
+ Container ticket-triage-n8n-n8n-1 Healthy 
+ Container ticket-triage-n8n-api-1 Healthy 
+PASS  T16   tras `down`+`up` PostgreSQL conserva todos los datos
+PASS  T16   n8n conserva workflows publicados y credenciales, y el owner sigue creado (no pide registro)
+PASS  T16   el buzon de Mailpit es EFIMERO por diseno: no sobrevive a `down` (sin volumen)
+PASS  T16   el flujo completo funciona tras down/up: las credenciales siguen descifrandose (clave y volumen persistentes)
+== Resultado: 10 comprobaciones, 10 correctas, 0 fallidas
+
+exit code: 0

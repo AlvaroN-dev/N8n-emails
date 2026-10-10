@@ -1,0 +1,58 @@
+Captura: 2026-10-09 17:46:19 -0500  (re-ejecutada en la Fase 5: ahora los fallos tecnicos de WF2 se gestionan por etapa y los registra WF3)
+n8n: 2.42.6 | LLM_PROVIDER=mock (IA SIMULADA)
+Comando: .\tests\integration\wf02-triage.ps1
+
+== WF2 - IA + correo: pruebas de integracion con IA SIMULADA (174620)
+PASS  T01   el ticket llega a notified con triage de IA (source=ai) y categoria/prioridad esperadas
+PASS  T01   el resumen viene de la IA y es de una sola linea
+PASS  T01   EXACTAMENTE un correo entregado en Mailpit
+PASS  T01   destinatario fijo, remitente y asunto con el formato definido
+PASS  T01   el cuerpo trae prioridad, categoria, resumen y el metodo (IA validada)
+PASS  T01   WF2 en success, paso por validacion y NO por el camino de fallo de la IA
+      nodos de WF2: Webhook - internal triage > Validate input > Get ticket > Already notified? > Already triaged? > Prepare AI input > OpenAI Chat Model > Triage with AI > Validate AI output > Save triage > Compose email > Send notification email > Mark notified > AI config failure to report?
+PASS  T01b  el LLM recibio el texto con correo y telefono REDACTADOS (el resumen "eco" no los contiene)
+PASS  T01b  el correo INTERNO al equipo si lleva el cliente (es su cometido); el dato no se perdio, solo no viajo al LLM
+PASS  T07   respuesta vacia -> fallback por reglas con motivo ai_empty (no se oculta)
+PASS  T07   el triage por reglas es completo y valido (categoria y prioridad del contrato)
+PASS  T07   un unico correo y declara explicitamente el modo degradado y su motivo
+PASS  T08   NOT_JSON -> fallback con motivo ai_invalid_json; nunca se usa un valor invalido
+PASS  T08   NOT_JSON -> un unico correo entregado
+PASS  T08   WRAPPED_TEXT -> fallback con motivo ai_invalid_json; nunca se usa un valor invalido
+PASS  T08   WRAPPED_TEXT -> un unico correo entregado
+PASS  T08   BAD_CATEGORY -> fallback con motivo ai_invalid_category; nunca se usa un valor invalido
+PASS  T08   BAD_CATEGORY -> un unico correo entregado
+PASS  T08   BAD_PRIORITY -> fallback con motivo ai_invalid_priority; nunca se usa un valor invalido
+PASS  T08   BAD_PRIORITY -> un unico correo entregado
+PASS  T08   MISSING_FIELD -> fallback con motivo ai_invalid_summary; nunca se usa un valor invalido
+PASS  T08   MISSING_FIELD -> un unico correo entregado
+PASS  T08   FENCED (JSON dentro de un bloque ```json) -> aceptado como IA
+PASS  T08   LONG_SUMMARY (600 caracteres) -> aceptado y recortado a 280
+PASS  T08   NEWLINES (saltos de linea y caracter de control) -> aplanado a una linea
+PASS  T08b  la IA devolvio instrucciones maliciosas y claves extra: el resumen se guarda COMO TEXTO
+PASS  T08b  NINGUN correo salio hacia attacker@evil.test; el unico destinatario es el del equipo
+PASS  T08b  el ticket sigue siendo consistente: no se borro nada (la clave "action" del modelo se ignoro)
+PASS  T09   HTTP429 -> fallback con motivo ai_rate_limited, ticket notificado
+PASS  T09   HTTP429 -> sin tormenta de reintentos (llamadas al proveedor: 1, maximo 2)
+PASS  T09   HTTP429 -> un unico correo
+PASS  T09   HTTP500 -> fallback con motivo ai_provider_error, ticket notificado
+PASS  T09   HTTP500 -> sin tormenta de reintentos (llamadas al proveedor: 1, maximo 2)
+PASS  T09   HTTP500 -> un unico correo
+PASS  T09   SLOW -> timeout del LLM (20 s): fallback ai_timeout; WF2 acaba en 21 s, dentro del limite de 90 s
+PASS  T09   SLOW -> sin tormenta de reintentos (llamadas: 1, maximo 2) y WF2 en success
+ Container ticket-triage-n8n-mailpit-1 Paused 
+ Container ticket-triage-n8n-mailpit-1 Unpaused 
+PASS  T11   con el SMTP sin responder, WF2 acaba en ERROR gestionado: type=smtp retryable=manual (no se oculta)
+PASS  T11   el fallo identifica la etapa y el TICKET afectado (para poder reprocesarlo)
+      detalle real del fallo de envio: Greeting never received
+PASS  T11   el triage SI se guardo, pero el ticket NO esta notificado
+PASS  T11   sin reintento automatico del correo: tras volver el SMTP no aparece ningun correo por si solo
+PASS  T13   el webhook interno acepta el reproceso (202)
+PASS  T13   tras el reproceso el ticket queda notificado y hay UN solo correo
+PASS  T13   el reproceso REUTILIZA el triage guardado: no vuelve a llamar a la IA
+PASS  T13   reprocesar un ticket ya notificado termina en la guardia y NO envia un segundo correo
+PASS  T12   ticket_id invalido: el webhook responde 202 (ya acepto) pero la ejecucion FALLA en Validate input
+PASS  T12   la ejecucion queda en error con mensaje VALIDATION y nadie recibe correo
+PASS  T12   ticket inexistente: fallo GESTIONADO en la etapa Get ticket (404 de Django): http_4xx, no reintentable, con el ticket_id
+      detalle real del 404: 404 - "{\"status\":\"error\",\"code\":\"not_found\",\"message\":\"No Ticket matches the given query.\"}" | ERR_BAD_REQUEST
+== Resultado: 46 comprobaciones, 46 correctas, 0 fallidas
+exit code: 0

@@ -1,0 +1,70 @@
+Captura: 2026-10-09 19:24:08 -05:00
+n8n: 2.42.6 | SSRF activo (N8N_SSRF_PROTECTION_ENABLED=true, allow-list: api, 127.0.0.1/32) | Fase 6: regresion
+Comando: .\tests\integration\wf01-intake.ps1   (suite completa con SSRF activo)
+
+== WF1 - Ticket intake: pruebas de integracion (20261009192408)
+== Estado previo: servicios healthy
+PASS  T01   HTTP 201 accepted con ticket_id y external_id
+PASS  T01   el ticket existe en Django con los datos enviados
+PASS  T01   WF1 termina en success y pasa por Create ticket + Start triage
+PASS  T01   WF2 se lanza exactamente una vez
+PASS  T00   calibracion: el contador ve >=1 ejecucion de WF1 y WF2 tras T01, y 0 despues de la ultima
+PASS  T02   HTTP 400 validation_error con un detalle por cada campo obligatorio
+PASS  T02   WF1 NO llega a Django ni lanza WF2; la ejecucion no es un fallo
+PASS  T02   no se crea ningun ticket
+PASS  T03   tipo incorrecto en 'subject' -> 400 con detalle de ese campo
+PASS  T03   tipo incorrecto en 'message' -> 400 con detalle de ese campo
+PASS  T03   tipo incorrecto en 'external_id' -> 400 con detalle de ese campo
+PASS  T03   tipo incorrecto en 'customer_email' -> 400 con detalle de ese campo
+PASS  T03   tipo incorrecto en 'source' -> 400 con detalle de ese campo
+PASS  T03   ningun ticket creado por tipos incorrectos
+PASS  T03b  un 400 de Django se devuelve al cliente con su detalle
+PASS  T03b  se trata como error del cliente: ejecucion en success (no es un fallo del workflow)
+PASS  T04   HTTP 502 upstream_error (el 500 de Django no se oculta como exito)
+PASS  T04   la ejecucion de WF1 queda en error: type=http_5xx retryable=yes, y NO lanza WF2
+PASS  T04   el fallo decodificado identifica nodo, ticket y causa
+PASS  T04   no se crea el ticket
+ Container ticket-triage-n8n-api-1 Stopping 
+ Container ticket-triage-n8n-api-1 Stopped 
+PASS  T05   HTTP 503 upstream_unavailable con la API caida
+PASS  T05   ejecucion en error: type=connection retryable=yes (el mensaje NO fue reescrito por n8n)
+PASS  T05   el fallo decodificado identifica nodo y ticket
+      detalle real del error de red: EAI_AGAIN
+ Container ticket-triage-n8n-postgres-1 Waiting 
+ Container ticket-triage-n8n-postgres-1 Healthy 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+PASS  T05   tras recuperar la API, reenviar la misma solicitud la acepta (201)
+PASS  T06   HTTP 504 upstream_timeout
+PASS  T06   responde a los ~8 s del timeout, no espera los 15 s de Django (tardo 8,1 s)
+PASS  T06   ejecucion en error: type=timeout retryable=yes
+      detalle real del error de timeout: timeout of 8000ms exceeded | ECONNABORTED
+PASS  T06   timeout AMBIGUO: Django termino y el ticket SI existe aunque se respondio 504
+PASS  T06   WF2 no se lanzo para ese ticket
+      esperando a que el ticket supere el periodo de gracia de 120 s (hasta ~2 min)...
+PASS  T06b  reenviar el ticket atascado -> 200 duplicate con reprocessing=true
+PASS  T06b  WF2 se lanza para reprocesarlo
+PASS  T06b  sigue habiendo un unico ticket (sin duplicados)
+PASS  T12   sin token -> 403
+PASS  T12   token incorrecto -> 403
+PASS  T12   el token INTERNO no sirve en el webhook publico -> 403
+PASS  T12   ninguna peticion rechazada crea ejecucion ni ticket
+PASS  T12   webhook interno de WF2: sin token -> 403
+PASS  T12   webhook interno de WF2: el token PUBLICO no sirve -> 403
+PASS  T14   primer envio 201; segundo envio 200 duplicate sin reprocesar
+PASS  T14   WF2 se lanza UNA sola vez y hay un unico ticket
+PASS  T14   prueba definitiva: UN solo correo en Mailpit (ni siquiera con el reenvio duplicado)
+PASS  T14b  5 peticiones simultaneas -> exactamente un 201 y cuatro 200 (obtenido: 200,200,200,200,201)
+PASS  T14b  un unico ticket y WF2 lanzado una sola vez
+PASS  T14b  prueba definitiva: 5 peticiones simultaneas -> UN solo correo en Mailpit
+PASS  T18   JSON malformado -> 422 de n8n, sin filtrar trazas internas
+PASS  T18   cuerpo de ~1,5 MiB (limite 1 MiB) -> rechazado (n8n responde 500 generico), sin trazas
+      respuesta real al cuerpo gigante: HTTP 500
+PASS  T18   los rechazos del borde no crean ejecuciones ni tickets
+PASS  T18   Content-Type text/plain -> 400 controlado
+PASS  T18   mensaje de 5001 caracteres -> 400 (regla de Django) con detalle en message
+PASS  T18   GET sobre el webhook (solo acepta POST) -> 404
+PASS  T18   cuerpo JSON que es un array -> 400 non_field_errors
+== Resultado: 51 comprobaciones, 51 correctas, 0 fallidas
+
+exit code: 0

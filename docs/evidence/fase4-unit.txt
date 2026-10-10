@@ -1,0 +1,31 @@
+Captura: 2026-10-09 13:42:31 -0500
+
+=== Django: manage.py test (75 tests; incluye qa_tools: LLM simulado e inyeccion de fallos)
+Found 75 test(s).
+Ran 75 tests in 0.461s
+OK
+Destroying test database for alias 'default'...
+
+=== n8n: scripts/test-workflows.ps1 (JSON al dia + tests unitarios de los nodos Code)
+ok: 01-ticket-intake.json
+ok: 02-ai-triage-notify.json
+ℹ tests 83
+ℹ pass 83
+ℹ fail 0
+RESULTADO: OK
+
+=== Mutation testing de WF2 (observado en la sesion: codigo roto en una copia y suite ejecutada)
+- IA puede devolver CUALQUIER categoria (sin validar enum)         -> 2 tests fallan
+- sin lista blanca: se pasan todas las claves del modelo           -> 5 tests fallan
+- el prompt incluye el texto SIN redactar ni neutralizar           -> 2 tests fallan
+- el destinatario del correo puede salir del resumen de la IA      -> 1 test falla
+- la redaccion de correos deja de funcionar                        -> 2 tests fallan
+- el JSON envuelto en prosa SI se acepta (se extrae)               -> 2 tests fallan
+
+=== Defectos reales encontrados por las pruebas de integracion y corregidos en esta fase
+- Telefono al final de una frase (p. ej. "+34 612 345 678.") NO se redactaba antes de enviarlo al LLM (JS y Python).
+- El LLM simulado tomaba el primer bloque <ticket> (el de las instrucciones) en lugar del ultimo.
+- Un 500 del proveedor de IA se clasificaba como ai_error: n8n lo reescribe como "The service was not able to process your request".
+- Un 400/404 del proveedor (clave invalida / modelo retirado) no se reportaba como fallo de configuracion.
+- Tras reiniciar, n8n esta "healthy" pero sirve la version ANTERIOR del workflow unos ~15 s (reconciliacion de publicaciones).
+- gemini-2.5-flash-lite ya no esta disponible para cuentas nuevas (404): se usa gemini-3.5-flash-lite.

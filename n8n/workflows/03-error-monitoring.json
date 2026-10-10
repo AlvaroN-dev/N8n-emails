@@ -1,0 +1,161 @@
+{
+  "id": "wfErrorMonitor03",
+  "name": "03 - Error monitoring",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c4d032c5-21b9-4fcc-a113-6acd4f178b0e",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF3 - \"Describe failure\"\n// Entrada: el payload del nodo Error Trigger. Salida: el evento SANEADO que se registra en Django.\n// Responde a: que workflow fallo, en que etapa, de que tipo, que se puede registrar sin riesgo y si conviene reintentar.\n// ---- Redaccion de datos personales (snippets/redact.js) ----\n// Se aplica al texto ANTES de enviarlo a cualquier servicio externo (el LLM). Es la misma regla que\n// backend/tickets/privacy.py, que Django aplica por su lado al guardar los mensajes de error.\n// Pecar de redactar de mas es lo seguro; el correo del cliente nunca viaja al LLM.\nconst EMAIL_RE = /[\\p{L}\\p{N}_.+-]+@[\\p{L}\\p{N}-]+(?:\\.[\\p{L}\\p{N}-]+)+/gu;\n// 9+ digitos con hasta 2 separadores entre digitos. Sin puntos entre digitos: una IP (172.20.0.3) o una version no son\n// telefonos. Un punto FINAL de frase si se admite (\"llamame al +34 612 345 678.\"), pero no un punto seguido de digito\n// (decimal): `(?!\\w|\\.\\d)`. Un `(?![\\w.])` dejaba SIN redactar los telefonos al final de una frase.\nconst PHONE_RE = /(?<![\\w.])(?:\\+|\\()?\\d(?:[\\s()-]{0,2}\\d){8,}(?!\\w|\\.\\d)/g;\n\nconst redactPii = (text) =>\n  String(text === undefined || text === null ? '' : text).replace(EMAIL_RE, '[email]').replace(PHONE_RE, '[phone]');\n// ---- Utilidades compartidas (el builder las inlinea en cada nodo Code que hace `// @include shared.js`) ----\n// Fuente unica: n8n/src/snippets/shared.js. No editar la copia dentro del JSON del workflow.\n\n// external_id llega del cliente SIN validar: solo se propaga si tiene el formato permitido.\nconst safeExternalId = (value) => (typeof value === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(value) ? value : '');\n\n// Texto corto y en una linea, apto para registrar. Nunca se vuelca un payload completo.\nconst shortDetail = (value) =>\n  String(value === undefined || value === null ? '' : value).replace(/\\s+/g, ' ').trim().slice(0, 200);\n\n// El error de un nodo HTTP puede llegar como texto o como objeto.\nconst errorText = (err) => {\n  if (err === undefined || err === null) return '';\n  if (typeof err === 'string') return err;\n  return [err.message, err.description, err.code, err.httpCode ? `HTTP ${err.httpCode}` : '']\n    .filter(Boolean)\n    .join(' | ');\n};\n\n// Mensaje del nodo \"Stop and Error\" que lee WF3. n8n SUSTITUYE el mensaje de un error si contiene (sin\n// distinguir mayusculas) codigos como ECONNREFUSED, EAI_AGAIN o ENOENT. Un external_id elegido por el cliente\n// o el texto de un error de red pueden contenerlos, asi que la carga va en HEXADECIMAL: ninguno de esos\n// codigos puede aparecer en un texto 0-9a-f (todos incluyen alguna letra fuera de a-f).\n// `type` y `retryable` son vocabulario controlado y se dejan en claro para leerlos en la interfaz.\nconst encodeFailure = (failure) => {\n  const ascii = JSON.stringify(failure).replace(/[^\\x00-\\x7f]/g, (c) => `\\\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);\n  const hex = ascii.split('').map((ch) => ch.charCodeAt(0).toString(16).padStart(2, '0')).join('');\n  return `HANDLED_FAILURE type=${failure.type} retryable=${failure.retryable} data=${hex}`;\n};\n\n// Inversa de encodeFailure (la usa WF3). Devuelve null si el mensaje no es un fallo gestionado.\nconst decodeFailure = (message) => {\n  const m = /data=([0-9a-f]+)/.exec(String(message || ''));\n  if (!m || m[1].length % 2 !== 0) return null;\n  try {\n    return JSON.parse(m[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join(''));\n  } catch (e) {\n    return null;\n  }\n};\n\n// Anade `failure_message` (lo que lanzara \"Stop and Error\") a un item que lleve un `failure`.\nconst withFailureMessage = (json) => (json.failure ? { ...json, failure_message: encodeFailure(json.failure) } : json);\n\n// Traduce un fallo de red/HTTP a: tipo de error (para el registro), respuesta al cliente y si es reintentable.\n//   retryable: 'yes' = repetir es seguro (operacion idempotente) | 'no' = hay que corregir algo | 'manual' = decide una persona\n// Algunos errores HTTP de n8n llegan como TEXTO que empieza por el codigo (p. ej. `404 - \"{...cuerpo...}\"`), sin httpCode.\nconst leadingStatus = (text) => {\n  const m = /^\\s*(\\d{3})\\b/.exec(text);\n  return m ? Number(m[1]) : NaN;\n};\n\nconst classifyError = (err) => {\n  const text = errorText(err).toLowerCase();\n  const http = Number(err && typeof err === 'object' ? err.httpCode || err.statusCode : NaN) || leadingStatus(text);\n  // Se reconocen tanto los codigos crudos (ECONNABORTED...) como los textos \"amigables\" con que n8n los reescribe\n  // (STATUS_CODE_MESSAGES y COMMON_ERRORS en n8n-workflow).\n  if (/timeout|timed out|etimedout|econnaborted|connection was aborted|gateway timed out/.test(text)) {\n    return { type: 'timeout', status: 504, code: 'upstream_timeout', retryable: 'yes' };\n  }\n  if (/econnrefused|enotfound|eai_again|ehostunreach|econnreset|socket hang up|getaddrinfo|network|perhaps the server is offline|perhaps it is offline|refused the connection|dns server|connection cannot be established|closed unexpectedly/.test(text)) {\n    return { type: 'connection', status: 503, code: 'upstream_unavailable', retryable: 'yes' };\n  }\n  if (http >= 500 || /not able to process your request|failed to process your request|bad gateway|service unavailable/.test(text)) {\n    return { type: 'http_5xx', status: 502, code: 'upstream_error', retryable: 'yes' };\n  }\n  if (http >= 400 || /authorization failed|check your credentials|forbidden|bad request|could not be found|method not allowed|payment required|request is invalid/.test(text)) {\n    return { type: 'http_4xx', status: 502, code: 'upstream_rejected', retryable: 'no' };\n  }\n  return { type: 'unknown', status: 502, code: 'upstream_error', retryable: 'manual' };\n};\n\nconst input = $input.first().json;\nconst wf = input.workflow || {};\nconst exec = input.execution || null; // ejecucion que fallo\nconst trig = input.trigger || null; // el fallo fue al ACTIVAR el trigger: la ejecucion nunca llego a existir\n\nconst ERROR_TYPES = ['http_4xx', 'http_5xx', 'timeout', 'connection', 'validation', 'ai_output', 'smtp', 'unknown'];\nconst RETRYABLE = ['no', 'yes', 'manual'];\nconst AI_NODES = ['Prepare AI input', 'Triage with AI', 'OpenAI Chat Model', 'Validate AI output', 'AI call failed'];\n\nconst rawMessage = String(\n  (exec && exec.error && exec.error.message)\n  || (trig && trig.error && (trig.error.message || (trig.error.cause && trig.error.cause.message)))\n  || '',\n);\nconst lastNode = String((exec && exec.lastNodeExecuted) || (trig && trig.error && trig.error.node && trig.error.node.name) || '');\n\n// 1) Fallo GESTIONADO por el propio workflow (mensaje HANDLED_FAILURE codificado): trae tipo, ticket y detalle fiables.\nconst handled = decodeFailure(rawMessage);\n\n// 2) Fallo NO gestionado: se deduce de la etapa (ultimo nodo) y del texto del error.\nconst classifyRaw = () => {\n  if (/^VALIDATION:/.test(rawMessage) || lastNode === 'Validate input') return { type: 'validation', retryable: 'no' };\n  if (/execution.*(timed out|timeout)|timed out after \\d+/i.test(rawMessage)) return { type: 'timeout', retryable: 'manual' };\n  if (lastNode === 'Send notification email') return { type: 'smtp', retryable: 'manual' };\n  if (AI_NODES.includes(lastNode)) return { type: 'ai_output', retryable: 'manual' };\n  const c = classifyError({ message: rawMessage });\n  return { type: c.type, retryable: c.retryable };\n};\n\nconst info = handled\n  ? {\n    type: ERROR_TYPES.includes(handled.type) ? handled.type : 'unknown',\n    retryable: RETRYABLE.includes(handled.retryable) ? handled.retryable : 'manual',\n    node: String(handled.node || lastNode),\n    detail: handled.detail,\n    ticketId: handled.ticket_id,\n    externalId: handled.ticket_external_id,\n  }\n  : { ...classifyRaw(), node: lastNode, detail: rawMessage, ticketId: null, externalId: '' };\n\n// SANEADO: nunca se registra el payload ni datos personales; solo ids, etapa, tipo y un detalle corto y redactado.\nconst event = {\n  workflow_id: String(wf.id || ''),\n  workflow_name: String(wf.name || 'unknown workflow').slice(0, 200),\n  execution_id: exec && exec.id !== undefined && exec.id !== null ? String(exec.id) : '',\n  failed_node: info.node.slice(0, 200),\n  error_type: info.type,\n  retryable: info.retryable,\n  message: redactPii(shortDetail(info.detail)).slice(0, 500),\n  ticket_id: Number.isInteger(info.ticketId) && info.ticketId > 0 ? info.ticketId : null,\n  ticket_external_id: safeExternalId(info.externalId),\n};\n\nconst url = exec && typeof exec.url === 'string' && /^https?:\\/\\/\\S+$/.test(exec.url) ? exec.url : '';\nreturn [{ json: { event, execution_url: url, handled: handled !== null } }];\n"
+      },
+      "id": "fbc0a8cc-8ef3-4e99-acd8-cc985cb77c54",
+      "name": "Describe failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/api/error-events/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 8000
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.event) }}"
+      },
+      "id": "35f3e3a2-32ec-4ef6-a70e-6d9d406b5876",
+      "name": "Register event in Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credDjangoApiKey1",
+          "name": "Django API Key"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// WF3 - \"Compose alert email\"\n// Salida de ERROR de \"Register event in Django\": el fallo NO pudo registrarse (p. ej. Django caido, justo lo que suele\n// fallar). Para que no se pierda en silencio se avisa por correo con el mismo evento SANEADO. Si el SMTP tambien\n// estuviera caido, el unico rastro seria el historial de ejecuciones de n8n.\n// ---- Utilidades compartidas (el builder las inlinea en cada nodo Code que hace `// @include shared.js`) ----\n// Fuente unica: n8n/src/snippets/shared.js. No editar la copia dentro del JSON del workflow.\n\n// external_id llega del cliente SIN validar: solo se propaga si tiene el formato permitido.\nconst safeExternalId = (value) => (typeof value === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(value) ? value : '');\n\n// Texto corto y en una linea, apto para registrar. Nunca se vuelca un payload completo.\nconst shortDetail = (value) =>\n  String(value === undefined || value === null ? '' : value).replace(/\\s+/g, ' ').trim().slice(0, 200);\n\n// El error de un nodo HTTP puede llegar como texto o como objeto.\nconst errorText = (err) => {\n  if (err === undefined || err === null) return '';\n  if (typeof err === 'string') return err;\n  return [err.message, err.description, err.code, err.httpCode ? `HTTP ${err.httpCode}` : '']\n    .filter(Boolean)\n    .join(' | ');\n};\n\n// Mensaje del nodo \"Stop and Error\" que lee WF3. n8n SUSTITUYE el mensaje de un error si contiene (sin\n// distinguir mayusculas) codigos como ECONNREFUSED, EAI_AGAIN o ENOENT. Un external_id elegido por el cliente\n// o el texto de un error de red pueden contenerlos, asi que la carga va en HEXADECIMAL: ninguno de esos\n// codigos puede aparecer en un texto 0-9a-f (todos incluyen alguna letra fuera de a-f).\n// `type` y `retryable` son vocabulario controlado y se dejan en claro para leerlos en la interfaz.\nconst encodeFailure = (failure) => {\n  const ascii = JSON.stringify(failure).replace(/[^\\x00-\\x7f]/g, (c) => `\\\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);\n  const hex = ascii.split('').map((ch) => ch.charCodeAt(0).toString(16).padStart(2, '0')).join('');\n  return `HANDLED_FAILURE type=${failure.type} retryable=${failure.retryable} data=${hex}`;\n};\n\n// Inversa de encodeFailure (la usa WF3). Devuelve null si el mensaje no es un fallo gestionado.\nconst decodeFailure = (message) => {\n  const m = /data=([0-9a-f]+)/.exec(String(message || ''));\n  if (!m || m[1].length % 2 !== 0) return null;\n  try {\n    return JSON.parse(m[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join(''));\n  } catch (e) {\n    return null;\n  }\n};\n\n// Anade `failure_message` (lo que lanzara \"Stop and Error\") a un item que lleve un `failure`.\nconst withFailureMessage = (json) => (json.failure ? { ...json, failure_message: encodeFailure(json.failure) } : json);\n\n// Traduce un fallo de red/HTTP a: tipo de error (para el registro), respuesta al cliente y si es reintentable.\n//   retryable: 'yes' = repetir es seguro (operacion idempotente) | 'no' = hay que corregir algo | 'manual' = decide una persona\n// Algunos errores HTTP de n8n llegan como TEXTO que empieza por el codigo (p. ej. `404 - \"{...cuerpo...}\"`), sin httpCode.\nconst leadingStatus = (text) => {\n  const m = /^\\s*(\\d{3})\\b/.exec(text);\n  return m ? Number(m[1]) : NaN;\n};\n\nconst classifyError = (err) => {\n  const text = errorText(err).toLowerCase();\n  const http = Number(err && typeof err === 'object' ? err.httpCode || err.statusCode : NaN) || leadingStatus(text);\n  // Se reconocen tanto los codigos crudos (ECONNABORTED...) como los textos \"amigables\" con que n8n los reescribe\n  // (STATUS_CODE_MESSAGES y COMMON_ERRORS en n8n-workflow).\n  if (/timeout|timed out|etimedout|econnaborted|connection was aborted|gateway timed out/.test(text)) {\n    return { type: 'timeout', status: 504, code: 'upstream_timeout', retryable: 'yes' };\n  }\n  if (/econnrefused|enotfound|eai_again|ehostunreach|econnreset|socket hang up|getaddrinfo|network|perhaps the server is offline|perhaps it is offline|refused the connection|dns server|connection cannot be established|closed unexpectedly/.test(text)) {\n    return { type: 'connection', status: 503, code: 'upstream_unavailable', retryable: 'yes' };\n  }\n  if (http >= 500 || /not able to process your request|failed to process your request|bad gateway|service unavailable/.test(text)) {\n    return { type: 'http_5xx', status: 502, code: 'upstream_error', retryable: 'yes' };\n  }\n  if (http >= 400 || /authorization failed|check your credentials|forbidden|bad request|could not be found|method not allowed|payment required|request is invalid/.test(text)) {\n    return { type: 'http_4xx', status: 502, code: 'upstream_rejected', retryable: 'no' };\n  }\n  return { type: 'unknown', status: 502, code: 'upstream_error', retryable: 'manual' };\n};\n\nconst item = $input.first().json; // el item de entrada del nodo HTTP + `error`\nconst e = item.event;\nconst why = shortDetail(errorText(item.error));\n\nconst subject = `[ALERT] ${e.workflow_name}: ${e.error_type} at ${e.failed_node || 'unknown node'}`.slice(0, 200);\nconst ticket = e.ticket_id || e.ticket_external_id\n  ? `#${e.ticket_id || '?'} (${e.ticket_external_id || 'external_id unknown'})`\n  : 'not identified';\nconst advice = e.retryable === 'yes'\n  ? 'Safe to reprocess (the operation is idempotent).'\n  : e.retryable === 'manual' ? 'A person must decide: retrying may have side effects.' : 'Do NOT just retry: fix the configuration or the data first.';\n\nconst text = [\n  'A workflow failed and the failure could NOT be registered in the ticket service.',\n  `Registration error: ${why}`,\n  '',\n  `Workflow:   ${e.workflow_name} (${e.workflow_id})`,\n  `Stage:      ${e.failed_node || 'unknown'}`,\n  `Type:       ${e.error_type}`,\n  `Retryable:  ${e.retryable}. ${advice}`,\n  `Ticket:     ${ticket}`,\n  `Execution:  ${e.execution_id || 'n/a'}${item.execution_url ? ` (${item.execution_url})` : ''}`,\n  '',\n  `Detail: ${e.message || 'n/a'}`,\n  '',\n  'Apart from this email, the only record is the n8n execution history.',\n].join('\\n');\n\nreturn [{ json: { email: { from: 'Ticket Triage Monitor <monitor@tickets.local>', to: 'ops-alerts@example.test', subject, text } } }];\n"
+      },
+      "id": "2d5a6585-c33c-4efa-a110-e8f7d8f67e0a",
+      "name": "Compose alert email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "email",
+        "operation": "send",
+        "fromEmail": "={{ $json.email.from }}",
+        "toEmail": "={{ $json.email.to }}",
+        "subject": "={{ $json.email.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.email.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "aceeed0e-b36f-4c1a-aa11-685cdc4ea96a",
+      "name": "Send alert email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "credSmtpMailpit01",
+          "name": "Mailpit SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Describe failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe failure": {
+      "main": [
+        [
+          {
+            "node": "Register event in Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register event in Django": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Compose alert email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose alert email": {
+      "main": [
+        [
+          {
+            "node": "Send alert email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 80
+  },
+  "pinData": {}
+}

@@ -1,0 +1,53 @@
+Captura: 2026-10-09 17:42:05 -0500
+n8n: 2.42.6 | LLM_PROVIDER=mock
+Comando: .\tests\integration\wf03-errors.ps1   (suite completa, incluye E9 doble fallo)
+
+== WF3 - Error monitoring: pruebas de integracion (174206)
+PASS  E1    el cliente recibe 502 y se registra UN evento del fallo
+PASS  E1    el evento dice QUE workflow, EN QUE etapa y de QUE tipo, y si reintentar
+PASS  E1    el execution_id del evento es el de la ejecucion REAL de n8n (trazabilidad)
+PASS  E1    WF3 se ejecuta UNA vez, en success, por el camino Error Trigger > Describe > Register (sin alerta)
+PASS  E1    NO se envia correo de alerta cuando el registro funciona
+ Container ticket-triage-n8n-mailpit-1 Paused 
+ Container ticket-triage-n8n-mailpit-1 Unpaused 
+PASS  E2    el fallo del correo se registra: WF2, etapa Send notification email, smtp, reintento MANUAL
+PASS  E2    el evento incluye el ticket afectado (id y external_id): lo necesario para reprocesarlo
+PASS  E2    tambien se encuentra filtrando por ticket_id
+      mensaje REAL registrado: Greeting never received
+PASS  E2    reprocesar el ticket del evento lo completa: notificado y UN solo correo
+PASS  E3    un error crudo (sin gestionar) tambien se registra, clasificado por la etapa: validation, no reintentar
+PASS  E3    el mensaje registrado es corto y no contiene trazas internas
+PASS  E4    ticket inexistente: etapa Get ticket, http_4xx, NO reintentable, con el ticket_id
+ Container ticket-triage-n8n-api-1 Stopping 
+ Container ticket-triage-n8n-api-1 Stopped 
+ Container ticket-triage-n8n-postgres-1 Waiting 
+ Container ticket-triage-n8n-postgres-1 Healthy 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+PASS  E5    con Django caido el fallo NO se pierde: llega un correo de ALERTA
+PASS  E5    la alerta indica workflow, etapa, tipo y el ticket, y va al destinatario de operaciones
+PASS  E5    la alerta NO contiene datos personales (ni correo ni telefono del cliente)
+PASS  E5    WF3 se ejecuta UNA vez y acaba en success (envio la alerta); sin bucles
+PASS  E5    tras volver Django NO hay evento NUEVO (limitacion conocida: el registro depende de Django; queda la alerta)
+ Container ticket-triage-n8n-api-1 Stopping 
+ Container ticket-triage-n8n-api-1 Stopped 
+ Container ticket-triage-n8n-postgres-1 Waiting 
+ Container ticket-triage-n8n-postgres-1 Healthy 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+PASS  E6    el fallo no se pierde: se registro en Django tras volver la API (1) o llego una alerta (0)
+      resultado observado: eventos=1, alertas nuevas=0
+PASS  E7    repetir el registro de la misma ejecucion -> 201 y despues 200 duplicate; una sola fila
+PASS  E8    ningun evento registrado contiene el correo ni el telefono del cliente de estas pruebas
+PASS  E8    ninguna alerta contiene el correo ni el telefono del cliente
+ Container ticket-triage-n8n-api-1 Stopping 
+ Container ticket-triage-n8n-api-1 Stopped 
+ Container ticket-triage-n8n-mailpit-1 Paused 
+ Container ticket-triage-n8n-mailpit-1 Unpaused 
+ Container ticket-triage-n8n-postgres-1 Waiting 
+ Container ticket-triage-n8n-postgres-1 Healthy 
+ Container ticket-triage-n8n-api-1 Starting 
+ Container ticket-triage-n8n-api-1 Started 
+PASS  E9    cuando WF3 tampoco puede avisar, su propia ejecucion queda en ERROR (visible en n8n) y NO se encadena otra
+== Resultado: 22 comprobaciones, 22 correctas, 0 fallidas
+exit code: 0

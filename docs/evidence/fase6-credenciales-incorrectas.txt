@@ -1,0 +1,23 @@
+Captura: 2026-10-09 19:34:22 -05:00
+n8n: 2.42.6 | SSRF activo (N8N_SSRF_PROTECTION_ENABLED=true, allow-list: api, 127.0.0.1/32) | Fase 6: regresion
+Comando: .\tests\integration\credentials-wrong.ps1   (T12d: API key incorrecta de n8n hacia Django; restaura con import-n8n.ps1)
+
+== T12 - credenciales incorrectas de n8n hacia Django (193423)
+Successfully imported 1 credential.
+PASS  T12d  WF1: Django rechaza la clave -> el cliente recibe 502 upstream_rejected (config, no culpa del cliente)
+PASS  T12d  la ejecucion queda en error http_4xx, NO reintentable, en la etapa Create ticket
+PASS  T12d  no se crea ningun ticket con una credencial incorrecta
+PASS  T12d  WF3 no puede registrar (Django le rechaza la misma clave): llega una ALERTA por correo
+PASS  T12d  la alerta identifica workflow, etapa y tipo, y NO contiene la clave erronea
+PASS  T12d  WF2: reprocesar con la clave incorrecta falla en Get ticket: http_4xx, no reintentable, con el ticket
+== Restaurando la credencial correcta (import-n8n.ps1)
+      Deactivating workflow "03 - Error monitoring".
+      == Publicando 03-error-monitoring.json (id wfErrorMonitor03)
+      Publishing workflow with ID: wfErrorMonitor03 (current version)
+      == Esperando a que las versiones nuevas esten en marcha (n8n reconcilia las publicaciones tras arrancar)
+      Importacion terminada. n8n esta healthy y las versiones nuevas estan en marcha.
+PASS  T12d  tras restaurar la credencial, el flujo completo vuelve a funcionar (201, ticket notificado, 1 correo)
+PASS  T12d  no queda ningun archivo temporal con claves en credentials/generated
+== Resultado: 8 comprobaciones, 8 correctas, 0 fallidas
+
+exit code: 0

@@ -1,0 +1,224 @@
+Captura: 2026-10-09 19:03:29 -0500
+Comando: .\scripts\clean-install-test.ps1   (proyecto Compose aislado 'tt-clean': otros puertos, volumenes y secretos)
+(criterios SSRF endurecidos tras revisar la salida completa de cada sonda)
+
+== PRUEBA DE INSTALACION LIMPIA (proyecto aislado 'tt-clean'; tu instalacion 'ticket-triage-n8n' NO se toca)
+
+== 0/6 Entorno nuevo: secretos aleatorios propios y puertos distintos
+.env creado en: C:\Users\Usuario\Documents\N8N\.env.clean
+Secretos generados (valores NO mostrados): POSTGRES_PASSWORD, DJANGO_SECRET_KEY, DJANGO_API_KEY, INTAKE_WEBHOOK_TOKEN, INTERNAL_WEBHOOK_TOKEN, N8N_ENCRYPTION_KEY
+Recuerda: .env esta en .gitignore y no debe subirse a Git. Guarda una copia de N8N_ENCRYPTION_KEY.
+PASS  el entorno limpio usa secretos DISTINTOS a los de tu instalacion real
+ Container tt-clean-api-1 Stopping 
+ Container tt-clean-n8n-1 Stopping 
+ Container tt-clean-mailpit-1 Stopping 
+ Container tt-clean-n8n-1 Stopped 
+ Container tt-clean-n8n-1 Removing 
+ Container tt-clean-n8n-1 Removed 
+ Container tt-clean-api-1 Stopped 
+ Container tt-clean-api-1 Removing 
+ Container tt-clean-api-1 Removed 
+ Container tt-clean-postgres-1 Stopping 
+ Container tt-clean-mailpit-1 Stopped 
+ Container tt-clean-mailpit-1 Removing 
+ Container tt-clean-mailpit-1 Removed 
+ Container tt-clean-postgres-1 Stopped 
+ Container tt-clean-postgres-1 Removing 
+ Container tt-clean-postgres-1 Removed 
+ Network tt-clean_default Removing 
+ Volume tt-clean_n8n_data Removing 
+ Volume tt-clean_postgres_data Removing 
+ Volume tt-clean_n8n_data Removed 
+ Volume tt-clean_postgres_data Removed 
+ Network tt-clean_default Removed 
+
+== 1/6 docker compose up --build --wait (desde cero)
+ Image ticket-triage-api:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 540B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 870B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.13-slim
+#3 DONE 0.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 97B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 1.45kB done
+#5 DONE 0.0s
+
+#6 [1/6] FROM docker.io/library/python:3.13-slim@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f
+#6 resolve docker.io/library/python:3.13-slim@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f 0.0s done
+#6 DONE 0.0s
+
+#7 [3/6] RUN useradd --system --uid 10001 --no-create-home appuser
+#7 CACHED
+
+#8 [4/6] COPY requirements.txt .
+#8 CACHED
+
+#9 [5/6] RUN pip install -r requirements.txt
+#9 CACHED
+
+#10 [2/6] WORKDIR /app
+#10 CACHED
+
+#11 [6/6] COPY . .
+#11 CACHED
+
+#12 exporting to image
+#12 exporting layers done
+#12 exporting manifest sha256:2fb308b0ae68306220659f2b95f6b31b3549b4d7877a0761bacaedf2b0ca233a done
+#12 exporting config sha256:67726547f490a1d31ec3992f900a3bbb3a65bb4c57a9facb03a40e02926fefc6 done
+#12 exporting attestation manifest sha256:681ad4f334ddfe00b07f332571ea8cbeca0c7bdfd6979b9f573b00908bfd696e 0.0s done
+#12 exporting manifest list sha256:3122f646041a8f0ecf0d811bb80fc935b3c5d6242e410d085265610e8441a411 0.0s done
+#12 naming to docker.io/library/ticket-triage-api:local done
+#12 unpacking to docker.io/library/ticket-triage-api:local done
+#12 DONE 0.1s
+
+#13 resolving provenance for metadata file
+#13 DONE 0.0s
+ Image ticket-triage-api:local Built 
+ Network tt-clean_default Creating 
+ Volume tt-clean_n8n_data Creating 
+ Volume tt-clean_postgres_data Creating 
+ Volume tt-clean_n8n_data Creating 
+ Network tt-clean_default Creating 
+ Volume tt-clean_postgres_data Creating 
+ Volume tt-clean_postgres_data Created 
+ Volume tt-clean_postgres_data Created 
+ Volume tt-clean_n8n_data Created 
+ Volume tt-clean_n8n_data Created 
+ Network tt-clean_default Created 
+ Network tt-clean_default Created 
+ Container tt-clean-postgres-1 Creating 
+ Container tt-clean-n8n-1 Creating 
+ Container tt-clean-mailpit-1 Creating 
+ Container tt-clean-mailpit-1 Created 
+ Container tt-clean-n8n-1 Created 
+ Container tt-clean-postgres-1 Created 
+ Container tt-clean-api-1 Creating 
+ Container tt-clean-api-1 Created 
+ Container tt-clean-mailpit-1 Starting 
+ Container tt-clean-postgres-1 Starting 
+ Container tt-clean-n8n-1 Starting 
+ Container tt-clean-mailpit-1 Started 
+ Container tt-clean-postgres-1 Started 
+ Container tt-clean-postgres-1 Waiting 
+ Container tt-clean-n8n-1 Started 
+ Container tt-clean-postgres-1 Healthy 
+ Container tt-clean-api-1 Starting 
+ Container tt-clean-api-1 Started 
+ Container tt-clean-mailpit-1 Waiting 
+ Container tt-clean-postgres-1 Waiting 
+ Container tt-clean-api-1 Waiting 
+ Container tt-clean-n8n-1 Waiting 
+ Container tt-clean-mailpit-1 Healthy 
+ Container tt-clean-postgres-1 Healthy 
+ Container tt-clean-api-1 Healthy 
+ Container tt-clean-n8n-1 Healthy 
+PASS  los 4 servicios arrancan healthy en una instalacion nueva
+PASS  la instalacion esta VACIA: 0 tickets y n8n sin owner (showSetupOnFirstLoad=true)
+
+== 2/6 import-n8n.ps1 en la instalacion nueva (sin crear antes el owner)
+Credencial seleccionada por LLM_PROVIDER=mock: llm-mock.template.json
+== Importando 5 credencial(es)
+Successfully imported 5 credentials.
+== Importando workflows
+Importing 3 workflows...
+Successfully imported 3 workflows.
+== Publicando 01-ticket-intake.json (id wfTicketIntake01)
+Publishing workflow with ID: wfTicketIntake01 (current version)
+Note: Changes will not take effect if n8n is running.
+Please restart n8n for changes to take effect if n8n is currently running.
+== Publicando 02-ai-triage-notify.json (id wfAiTriageNotify)
+Publishing workflow with ID: wfAiTriageNotify (current version)
+Note: Changes will not take effect if n8n is running.
+Please restart n8n for changes to take effect if n8n is currently running.
+== Publicando 03-error-monitoring.json (id wfErrorMonitor03)
+Publishing workflow with ID: wfErrorMonitor03 (current version)
+Note: Changes will not take effect if n8n is running.
+Please restart n8n for changes to take effect if n8n is currently running.
+== Reiniciando n8n
+ Container tt-clean-n8n-1 Restarting 
+ Container tt-clean-n8n-1 Started 
+== Esperando a que las versiones nuevas esten en marcha (n8n reconcilia las publicaciones tras arrancar)
+Importacion terminada. n8n esta healthy y las versiones nuevas estan en marcha.
+PASS  import-n8n.ps1 termina con exito (credenciales + 3 workflows importados y publicados)
+PASS  los 3 workflows estan realmente en marcha (reconciliados por n8n)
+
+== 3/6 smoke test de la API contra la instalacion nueva
+== Smoke test API: http://127.0.0.1:18000
+PASS  health 200 sin autenticacion
+PASS  sin API key -> 401 unauthorized
+PASS  API key incorrecta -> 401
+PASS  alta valida -> 201 duplicate=false
+PASS  mismo external_id -> 200 duplicate=true y mismo id
+PASS  cuerpo vacio -> 400 con detalle de campos
+PASS  subject numerico (tipo incorrecto) -> 400
+PASS  GET ticket -> 200
+PASS  PATCH triage -> 200 status=triaged
+PASS  triage con categoria invalida -> 400
+PASS  notified: 1a vez already_notified=false, 2a vez true
+PASS  notified sin triage previo -> 409 not_triaged
+PASS  error-event -> 201 con el email redactado
+PASS  ruta inexistente -> 404 JSON
+== Resultado: 14 correctas, 0 fallidas
+PASS  smoke-api.ps1: 14/14 contra la instalacion nueva
+
+== 4/6 suites de integracion contra la instalacion nueva (WF1, WF2, WF3)
+-- WF1 intake (sin T06b)
+== Resultado: 48 comprobaciones, 48 correctas, 0 fallidas
+PASS  suite WF1 intake (sin T06b)
+-- WF2 IA simulada + correo (sin SLOW)
+== Resultado: 44 comprobaciones, 44 correctas, 0 fallidas
+PASS  suite WF2 IA simulada + correo (sin SLOW)
+-- WF3 errores (sin doble fallo)
+== Resultado: 21 comprobaciones, 21 correctas, 0 fallidas
+PASS  suite WF3 errores (sin doble fallo)
+
+== 5/6 Proteccion SSRF: sondas dentro del proyecto desechable
+PASS  SSRF: el host permitido (api) SI conecta (ssrfProbeAllow01)
+PASS  SSRF: el destino interno NO permitido se BLOQUEA (ssrfProbeBlock01)
+      respuesta real de n8n: The request was blocked because it resolves to a restricted IP address
+PASS  SSRF: el destino interno NO permitido se BLOQUEA (ssrfProbeBlock02)
+      respuesta real de n8n: The request was blocked because it resolves to a restricted IP address
+PASS  SSRF: el destino interno NO permitido se BLOQUEA (ssrfProbeBlock03)
+      respuesta real de n8n: The request was blocked because it resolves to a restricted IP address
+PASS  SSRF (control): con la proteccion DESACTIVADA, la sonda de mailpit SI conecta (el bloqueo lo causa la proteccion)
+
+== 6/6 Limpieza del proyecto desechable
+ Container tt-clean-api-1 Stopping 
+ Container tt-clean-n8n-1 Stopping 
+ Container tt-clean-mailpit-1 Stopping 
+ Container tt-clean-n8n-1 Stopped 
+ Container tt-clean-n8n-1 Removing 
+ Container tt-clean-n8n-1 Removed 
+ Container tt-clean-api-1 Stopped 
+ Container tt-clean-api-1 Removing 
+ Container tt-clean-api-1 Removed 
+ Container tt-clean-postgres-1 Stopping 
+ Container tt-clean-mailpit-1 Stopped 
+ Container tt-clean-mailpit-1 Removing 
+ Container tt-clean-mailpit-1 Removed 
+ Container tt-clean-postgres-1 Stopped 
+ Container tt-clean-postgres-1 Removing 
+ Container tt-clean-postgres-1 Removed 
+ Volume tt-clean_n8n_data Removing 
+ Volume tt-clean_postgres_data Removing 
+ Network tt-clean_default Removing 
+ Volume tt-clean_postgres_data Removed 
+ Volume tt-clean_n8n_data Removed 
+ Network tt-clean_default Removed 
+PASS  el proyecto desechable se elimina por completo (volumenes restantes: 0)
+PASS  TU instalacion real conserva sus volumenes (no se borro nada)
+PASS  TU instalacion real conserva sus datos (tickets: antes=148, despues=148)
+
+== Resultado: 17 comprobaciones, 17 correctas, 0 fallidas  (duracion 6,6 min)
+exit code: 0

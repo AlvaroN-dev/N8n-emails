@@ -1,0 +1,244 @@
+Captura: 2026-10-09 19:36:28 -05:00
+Django 5.2 + DRF | QA_TOOLS_ENABLED=true (modo desarrollo) | Fase 6
+Comando: docker compose exec -T api python manage.py test --noinput
+
+Found 84 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+2026-10-10 00:36:26,250 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,252 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,253 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,253 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,254 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,256 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,257 WARNING qa_tools.middleware qa_fault_injected kind=slow seconds=15 path=/api/tickets/
+2026-10-10 00:36:26,282 INFO tickets.views ticket_created id=1 external_id=QA-SLOW-demo
+2026-10-10 00:36:26,285 INFO tickets.views ticket_duplicate id=1 external_id=QA-SLOW-demo
+.2026-10-10 00:36:26,288 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,288 WARNING qa_tools.middleware qa_fault_injected kind=http_500 path=/api/tickets/
+2026-10-10 00:36:26,288 ERROR django.request Internal Server Error: /api/tickets/
+.2026-10-10 00:36:26,291 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,292 WARNING qa_tools.middleware qa_fault_injected kind=slow seconds=15 path=/api/tickets/
+2026-10-10 00:36:26,294 INFO tickets.views ticket_created id=2 external_id=QA-SLOW-demo
+.2026-10-10 00:36:26,296 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+.2026-10-10 00:36:26,299 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,302 INFO tickets.views ticket_created id=3 external_id=TCK-1001
+.2026-10-10 00:36:26,310 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,373 INFO tickets.views error_event id=1 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,376 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,378 INFO tickets.views error_event id=2 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,381 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,383 INFO tickets.views error_event id=3 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,385 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,387 INFO tickets.views error_event id=4 workflow=wf type=unknown retryable=no
+2026-10-10 00:36:26,388 WARNING django.request Bad Request: /api/error-events/
+.2026-10-10 00:36:26,389 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,390 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,391 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,392 WARNING django.request Bad Request: /api/error-events/
+..2026-10-10 00:36:26,404 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,408 INFO tickets.views error_event id=9 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,411 INFO tickets.views error_event id=10 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,414 INFO tickets.views error_event id=11 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,416 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,419 INFO tickets.views error_event id=12 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,424 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,425 INFO tickets.views error_event id=13 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,427 INFO tickets.views error_event id=14 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,435 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,440 INFO tickets.views error_event id=15 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,443 INFO tickets.views error_event id=16 workflow=01 - Ticket intake type=timeout retryable=yes
+2026-10-10 00:36:26,445 INFO tickets.views error_event id=17 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,453 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,456 INFO tickets.views error_event id=18 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,460 INFO tickets.views error_event id=19 workflow=01 - Ticket intake type=timeout retryable=yes
+2026-10-10 00:36:26,463 INFO tickets.views error_event id=20 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,469 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,471 INFO tickets.views error_event id=21 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,474 INFO tickets.views error_event id=22 workflow=01 - Ticket intake type=timeout retryable=yes
+2026-10-10 00:36:26,478 INFO tickets.views error_event id=23 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,487 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,493 INFO tickets.views error_event id=24 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,497 INFO tickets.views error_event id=25 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,503 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,506 INFO tickets.views error_event id=26 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,508 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,509 INFO tickets.views error_event id=27 workflow=01 - Ticket intake type=http_5xx retryable=yes
+2026-10-10 00:36:26,511 INFO tickets.views error_event id=28 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.2026-10-10 00:36:26,513 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,514 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,515 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,516 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,516 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,517 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,518 WARNING django.request Bad Request: /api/error-events/
+2026-10-10 00:36:26,519 WARNING django.request Bad Request: /api/error-events/
+.2026-10-10 00:36:26,526 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,530 INFO tickets.views ticket_created id=4 external_id=TCK-1001
+.2026-10-10 00:36:26,533 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,533 WARNING django.request Unauthorized: /api/tickets/
+.2026-10-10 00:36:26,534 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,534 WARNING django.request Unauthorized: /api/error-events/
+.2026-10-10 00:36:26,535 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,536 WARNING django.request Unauthorized: /api/tickets/
+.2026-10-10 00:36:26,537 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,538 WARNING django.request Unauthorized: /api/tickets/1/
+2026-10-10 00:36:26,538 WARNING django.request Unauthorized: /api/tickets/1/triage/
+2026-10-10 00:36:26,539 WARNING django.request Unauthorized: /api/tickets/1/notified/
+2026-10-10 00:36:26,539 WARNING django.request Unauthorized: /api/error-events/
+2026-10-10 00:36:26,539 WARNING django.request Unauthorized: /api/error-events/
+.2026-10-10 00:36:26,546 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,546 WARNING django.request Unsupported Media Type: /api/tickets/
+.2026-10-10 00:36:26,551 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,554 ERROR django.request Internal Server Error: /api/tickets/1/
+.2026-10-10 00:36:26,556 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,556 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,557 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,558 WARNING django.request Method Not Allowed: /api/tickets/
+.2026-10-10 00:36:26,559 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,559 WARNING django.request Not Found: /api/no-existe/
+.2026-10-10 00:36:26,567 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,567 ERROR tickets.views health_check database=unavailable
+2026-10-10 00:36:26,568 ERROR django.request Service Unavailable: /api/health/
+.2026-10-10 00:36:26,570 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+.2026-10-10 00:36:26,577 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+.2026-10-10 00:36:26,589 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,590 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,593 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,594 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,594 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,595 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,596 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,597 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,597 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,598 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,598 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,600 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,601 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,604 INFO tickets.views ticket_created id=6 external_id=TCK-1001
+2026-10-10 00:36:26,606 INFO tickets.views ticket_duplicate id=6 external_id=TCK-1001
+.2026-10-10 00:36:26,608 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,609 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,610 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,611 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,615 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,619 INFO tickets.views ticket_created id=7 external_id=TCK-2000
+.2026-10-10 00:36:26,622 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,626 INFO tickets.views ticket_created id=8 external_id=TCK-1001
+.2026-10-10 00:36:26,629 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,634 INFO tickets.views ticket_created id=9 external_id=TCK-1001
+.2026-10-10 00:36:26,638 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,642 INFO tickets.views ticket_created id=10 external_id=TCK-1001
+.2026-10-10 00:36:26,645 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,646 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,647 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,648 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,649 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,650 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,653 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,655 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,656 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,659 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,660 WARNING django.request Bad Request: /api/tickets/
+2026-10-10 00:36:26,660 WARNING django.request Bad Request: /api/tickets/
+.2026-10-10 00:36:26,668 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,674 INFO tickets.views ticket_created id=11 external_id=TCK-1001
+.2026-10-10 00:36:26,679 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,681 WARNING django.request Not Found: /api/tickets/999999/
+.2026-10-10 00:36:26,689 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,694 INFO tickets.views ticket_created id=12 external_id=TCK-1001
+2026-10-10 00:36:26,698 INFO tickets.views ticket_triaged id=12 source=ai category=technical priority=high
+2026-10-10 00:36:26,700 INFO tickets.views ticket_notified id=12
+.2026-10-10 00:36:26,705 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,706 INFO tickets.views ticket_created id=13 external_id=TCK-1001
+2026-10-10 00:36:26,709 WARNING django.request Conflict: /api/tickets/13/notified/
+.2026-10-10 00:36:26,711 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,713 WARNING django.request Not Found: /api/tickets/999999/notified/
+.2026-10-10 00:36:26,720 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,724 INFO tickets.views ticket_created id=14 external_id=TCK-1001
+2026-10-10 00:36:26,727 WARNING django.request Bad Request: /api/tickets/14/triage/
+.2026-10-10 00:36:26,728 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,730 INFO tickets.views ticket_created id=15 external_id=TCK-1001
+2026-10-10 00:36:26,733 INFO tickets.views ticket_triaged id=15 source=ai category=technical priority=high
+.2026-10-10 00:36:26,735 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,737 INFO tickets.views ticket_created id=16 external_id=TCK-1001
+2026-10-10 00:36:26,741 INFO tickets.views ticket_triaged id=16 source=fallback category=technical priority=high
+.2026-10-10 00:36:26,743 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,745 INFO tickets.views ticket_created id=17 external_id=TCK-1001
+2026-10-10 00:36:26,748 INFO tickets.views ticket_triaged id=17 source=ai category=technical priority=high
+2026-10-10 00:36:26,751 INFO tickets.views ticket_triaged id=17 source=ai category=technical priority=high
+.2026-10-10 00:36:26,753 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,755 INFO tickets.views ticket_created id=18 external_id=TCK-1001
+2026-10-10 00:36:26,756 WARNING django.request Method Not Allowed: /api/tickets/18/triage/
+.2026-10-10 00:36:26,757 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,759 WARNING django.request Not Found: /api/tickets/999999/triage/
+.2026-10-10 00:36:26,760 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,762 INFO tickets.views ticket_created id=19 external_id=TCK-1001
+2026-10-10 00:36:26,766 INFO tickets.views ticket_triaged id=19 source=ai category=technical priority=high
+2026-10-10 00:36:26,768 INFO tickets.views ticket_notified id=19
+2026-10-10 00:36:26,771 INFO tickets.views ticket_triaged id=19 source=ai category=technical priority=low
+.2026-10-10 00:36:26,773 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,775 INFO tickets.views ticket_created id=20 external_id=TCK-1001
+2026-10-10 00:36:26,777 WARNING django.request Bad Request: /api/tickets/20/triage/
+2026-10-10 00:36:26,778 WARNING django.request Bad Request: /api/tickets/20/triage/
+2026-10-10 00:36:26,779 WARNING django.request Bad Request: /api/tickets/20/triage/
+2026-10-10 00:36:26,781 WARNING django.request Bad Request: /api/tickets/20/triage/
+2026-10-10 00:36:26,782 WARNING django.request Bad Request: /api/tickets/20/triage/
+2026-10-10 00:36:26,784 WARNING django.request Bad Request: /api/tickets/20/triage/
+2026-10-10 00:36:26,785 WARNING django.request Bad Request: /api/tickets/20/triage/
+.2026-10-10 00:36:26,788 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+.2026-10-10 00:36:26,789 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+2026-10-10 00:36:26,789 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+2026-10-10 00:36:26,789 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+2026-10-10 00:36:26,789 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+2026-10-10 00:36:26,789 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+.2026-10-10 00:36:26,789 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+.2026-10-10 00:36:26,790 INFO qa_tools.llm_mock llm_mock mode=NORMAL
+.2026-10-10 00:36:26,790 INFO qa_tools.llm_mock llm_mock mode=HTTP429
+.2026-10-10 00:36:26,790 INFO qa_tools.llm_mock llm_mock mode=HTTP500
+.2026-10-10 00:36:26,790 INFO qa_tools.llm_mock llm_mock mode=ECHO
+.2026-10-10 00:36:26,790 INFO qa_tools.llm_mock llm_mock mode=INJECTION
+.2026-10-10 00:36:26,790 INFO qa_tools.llm_mock llm_mock mode=WRAPPED_TEXT
+2026-10-10 00:36:26,791 INFO qa_tools.llm_mock llm_mock mode=FENCED
+.2026-10-10 00:36:26,791 INFO qa_tools.llm_mock llm_mock mode=NOT_JSON
+.2026-10-10 00:36:26,791 INFO qa_tools.llm_mock llm_mock mode=SLOW
+.2026-10-10 00:36:26,791 INFO qa_tools.llm_mock llm_mock mode=LONG_SUMMARY
+2026-10-10 00:36:26,792 INFO qa_tools.llm_mock llm_mock mode=NEWLINES
+.2026-10-10 00:36:26,792 INFO qa_tools.llm_mock llm_mock mode=EMPTY
+.2026-10-10 00:36:26,792 INFO qa_tools.llm_mock llm_mock mode=BAD_CATEGORY
+2026-10-10 00:36:26,792 INFO qa_tools.llm_mock llm_mock mode=BAD_PRIORITY
+2026-10-10 00:36:26,792 INFO qa_tools.llm_mock llm_mock mode=MISSING_FIELD
+....2026-10-10 00:36:26,794 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,795 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,798 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,799 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,802 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,815 INFO tickets.views error_event id=29 workflow=01 - Ticket intake type=http_5xx retryable=yes
+.......2026-10-10 00:36:26,841 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,841 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,843 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,845 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,847 WARNING qa_tools.middleware QA_TOOLS_ENABLED=true: inyeccion de fallos ACTIVA (solo para desarrollo y pruebas)
+2026-10-10 00:36:26,863 INFO tickets.views ticket_created id=21 external_id=TCK-1001
+2026-10-10 00:36:26,868 INFO tickets.views ticket_duplicate id=21 external_id=TCK-1001
+2026-10-10 00:36:26,869 INFO tickets.views ticket_duplicate id=21 external_id=TCK-1001
+2026-10-10 00:36:26,870 INFO tickets.views ticket_duplicate id=21 external_id=TCK-1001
+2026-10-10 00:36:26,870 INFO tickets.views ticket_duplicate id=21 external_id=TCK-1001
+.
+----------------------------------------------------------------------
+Ran 84 tests in 0.646s
+System.Management.Automation.RemoteException
+OK
+Destroying test database for alias 'default'...
+
+exit code: 0
+
+--- docker compose exec -T api python manage.py check --deploy (3 avisos aceptados en docs/security.md)
+System check identified some issues:
+System.Management.Automation.RemoteException
+WARNINGS:
+?: (security.W003) You don't appear to be using Django's built-in cross-site request forgery protection via the middleware ('django.middleware.csrf.CsrfViewMiddleware' is not in your MIDDLEWARE). Enabling the middleware is the safest approach to ensure you don't leave any holes.
+?: (security.W004) You have not set a value for the SECURE_HSTS_SECONDS setting. If your entire site is served only over SSL, you may want to consider setting a value and enabling HTTP Strict Transport Security. Be sure to read the documentation first; enabling HSTS carelessly can cause serious, irreversible problems.
+?: (security.W008) Your SECURE_SSL_REDIRECT setting is not set to True. Unless your site should be available over both SSL and non-SSL connections, you may want to either set this setting True or configure a load balancer or reverse-proxy server to redirect all connections to HTTPS.
+System.Management.Automation.RemoteException
+System check identified 3 issues (0 silenced).
